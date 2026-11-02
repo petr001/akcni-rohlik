@@ -214,60 +214,63 @@ export default function App() {
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
   const closeFolder = useCallback(() => setOpen(null), [])
 
-  const sel = 'rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-medium shadow-card'
-  const btn = 'rounded-full bg-surface-2 px-3.5 py-2 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
+  const sel = 'h-9 min-w-[8.5rem] flex-1 rounded-full md:min-w-0 border border-line bg-surface px-3 text-sm font-medium shadow-card'
+  const chips =
+    view !== 'flat' && sections.length > 1 ? (
+      <nav className="flex flex-wrap gap-1.5" aria-label="Kategorie">
+        {sections.map((sec) => (
+          <a
+            key={sec.id}
+            href={`#cat-${sec.id}`}
+            onClick={(e) => { e.preventDefault(); jump(sec.id) }}
+            className="rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium transition hover:border-accent hover:text-accent active:scale-95"
+          >
+            {sec.name}
+          </a>
+        ))}
+      </nav>
+    ) : null
+  const btn = 'rounded-full bg-surface-2 px-3.5 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-32 pt-3">
-      <header className="z-30 -mx-4 mb-5 border-b border-line/70 bg-bg/85 px-4 py-3 backdrop-blur-xl md:sticky md:top-0">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="mr-1 flex items-center gap-1.5 text-2xl font-black tracking-tight">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-lg text-accent-ink">⚡</span>
-            Fast Rohlík
+      <header className="sticky top-0 z-30 -mx-4 mb-4 border-b border-line/70 bg-bg/85 px-4 py-2 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
+          <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
+            <span className="hidden lg:inline">Fast Rohlík</span>
           </h1>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="🔍  Hledat druh nebo produkt…"
-            className="min-w-[12rem] flex-1 rounded-full border border-line bg-surface px-4 py-2.5 shadow-card placeholder:text-muted"
+            placeholder="🔍 Hledat…"
+            aria-label="Hledat druh nebo produkt"
+            className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-44 md:flex-none md:focus:w-72"
           />
           {me ? (
-            <button onClick={logout} className={btn} title={me}>Odhlásit</button>
+            <button onClick={logout} className={`${btn} h-9 shrink-0 md:order-last`} title={me}>Odhlásit</button>
           ) : (
-            <button onClick={() => setShowLogin(true)} className="rounded-full bg-accent px-4 py-2 text-sm font-bold text-accent-ink transition active:scale-95">Přihlásit</button>
+            <button onClick={() => setShowLogin(true)} className="h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
           )}
-        </div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <select value={view} onChange={(e) => setView(e.target.value as View)} className={sel} aria-label="Seskupení">
-            <option value="rohlik">Kategorie (pořadí Rohlíku)</option>
-            <option value="abc">Kategorie (abecedně)</option>
+          <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
+            <option value="rohlik">Kategorie · pořadí Rohlíku</option>
+            <option value="abc">Kategorie · abecedně</option>
             <option value="flat">Bez seskupení</option>
           </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={sel} aria-label="Řazení druhů">
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={`${sel} md:flex-initial`} aria-label="Řazení druhů">
             <option value="discount">Největší sleva</option>
             <option value="count">Nejvíc produktů</option>
             <option value="cheapest">Nejlevnější</option>
             <option value="name">Abecedně</option>
           </select>
-          <button onClick={() => load(true)} disabled={loading} className={btn}>
-            <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span> {loading ? 'Načítám' : 'Obnovit'}
+          <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0`} aria-label="Obnovit akce">
+            <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
+            <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
           </button>
         </div>
-        {view !== 'flat' && sections.length > 1 && (
-          <nav className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Kategorie">
-            {sections.map((sec) => (
-              <a
-                key={sec.id}
-                href={`#cat-${sec.id}`}
-                onClick={(e) => { e.preventDefault(); jump(sec.id) }}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium transition hover:border-accent hover:text-accent active:scale-95"
-              >
-                {sec.name}
-              </a>
-            ))}
-          </nav>
-        )}
+        {chips && <div className="mt-2 hidden lg:block">{chips}</div>}
       </header>
+      {chips && <div className="mb-4 lg:hidden">{chips}</div>}
 
       {error && <p className="rounded-2xl bg-sale/15 p-3 text-sale">Chyba: {error}</p>}
       {progress && (
@@ -286,7 +289,7 @@ export default function App() {
             // Při hledání jsou otevřené všechny sekce s výsledky (uložený stav se nemění); v „Bez seskupení“ vždy.
             const open = searching || !sec.name || openSection === sec.id
             return (
-              <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-4 md:scroll-mt-52">
+              <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-28 md:scroll-mt-40">
                 {sec.name && (
                   <h2 className="mb-3 border-b border-line pb-2">
                     <button
