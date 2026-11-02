@@ -304,13 +304,13 @@ export default function App() {
             return (
               <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-28 md:scroll-mt-40">
                 {sec.name && (
-                  <h2 className="mb-3 border-b border-line pb-2">
+                  <h2 className="mb-3 border-b border-line">
                     <button
                       onClick={() => toggle(sec.id)}
                       aria-expanded={open}
                       aria-controls={`cat-${sec.id}-body`}
                       disabled={searching}
-                      className="group flex w-full items-center gap-3 text-left"
+                      className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-1 py-1 text-left transition-colors duration-150 hover:bg-header active:bg-header focus-visible:bg-header focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent disabled:cursor-default disabled:hover:bg-transparent"
                     >
                       <span
                         aria-hidden
