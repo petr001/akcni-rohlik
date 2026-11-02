@@ -228,9 +228,11 @@ export default function App() {
             onClick={(e) => { e.preventDefault(); jump(sec.id) }}
             aria-current={sec.id === openSection ? 'true' : undefined}
             data-chip={sec.id}
+            title={sec.name}
+            aria-label={sec.name}
             className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md border bg-surface px-2 py-0.5 text-xs font-medium transition hover:border-accent hover:text-accent active:scale-95 max-md:min-h-8 max-md:px-2.5 ${sec.id === openSection ? 'border-accent text-accent' : 'border-line'}`}
           >
-            {categoryIcon(sec.name) && <span aria-hidden className="mr-1">{categoryIcon(sec.name)}</span>}{sec.name}
+            {categoryIcon(sec.name) ? <span aria-hidden className="text-4xl leading-none">{categoryIcon(sec.name)}</span> : sec.name}
           </a>
         ))}
       </nav>
