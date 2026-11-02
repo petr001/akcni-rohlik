@@ -153,7 +153,7 @@ export default function App() {
 
   return (
     <div className="mx-auto max-w-7xl px-3 pb-28 pt-4">
-      <header className="sticky top-0 z-30 -mx-3 mb-4 flex flex-wrap items-center gap-3 bg-stone-100/90 px-3 py-2 backdrop-blur">
+      <header className="md:sticky top-0 z-30 -mx-3 mb-4 flex flex-wrap items-center gap-3 bg-stone-100/90 px-3 py-2 backdrop-blur">
         <h1 className="text-xl font-extrabold">⚡ Fast Rohlík</h1>
         <input
           value={query}
@@ -181,9 +181,9 @@ export default function App() {
           <button onClick={() => setShowLogin(true)} className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Přihlásit</button>
         )}
         {view !== 'flat' && sections.length > 1 && (
-          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1">
+          <nav className="flex w-full flex-wrap gap-2">
             {sections.map((sec) => (
-              <a key={sec.id} href={`#cat-${sec.id}`} className="shrink-0 rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
+              <a key={sec.id} href={`#cat-${sec.id}`} className="rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
                 {sec.name}
               </a>
             ))}
@@ -200,7 +200,7 @@ export default function App() {
             {deals.total} produktů v akci ve {groupCount} druzích · {deals.fetchedAt && `stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
           {sections.map((sec) => (
-            <section key={sec.id} id={`cat-${sec.id}`} className="mb-8 scroll-mt-32">
+            <section key={sec.id} id={`cat-${sec.id}`} className="mb-8 scroll-mt-4 md:scroll-mt-48">
               {sec.name && (
                 <h2 className="mb-3 text-lg font-bold">
                   {sec.name} <span className="text-sm font-normal text-stone-400">{sec.groups.length} druhů</span>
