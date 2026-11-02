@@ -23,12 +23,23 @@ export function Preview({ groups, onOpenGroup, onOpenSection }: Props) {
           <button
             key={g.id}
             onClick={(e) => onOpenGroup(g, e.currentTarget.getBoundingClientRect())}
-            className="flex min-w-0 flex-col gap-0.5 rounded-xl bg-surface px-2.5 py-2 text-left shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-pop active:scale-95"
+            className="flex min-w-0 items-center gap-2 rounded-xl bg-surface px-2.5 py-2 text-left shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-pop active:scale-95"
           >
+            <img
+              src={rep.image}
+              alt=""
+              width={28}
+              height={28}
+              loading="lazy"
+              decoding="async"
+              className="h-7 w-7 shrink-0 rounded-md bg-white object-contain"
+            />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate text-[13px] font-semibold leading-tight">{g.name}</span>
             <span className="flex items-center justify-between gap-1">
               <span className="whitespace-nowrap text-[13px] font-extrabold text-sale">{kc(rep.salePrice)}</span>
               <span className="shrink-0 whitespace-nowrap rounded-full bg-sale px-1.5 text-[10px] font-extrabold leading-4 text-sale-ink">{pct(rep.discount)}</span>
+            </span>
             </span>
           </button>
         )

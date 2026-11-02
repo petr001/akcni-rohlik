@@ -33,7 +33,7 @@ export default function App() {
   const [addedId, setAddedId] = useState<number | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<Sort>('count')
+  const [sort, setSort] = useState<Sort>('discount')
   const [openSection, setOpenSection] = useState<number | null>(readOpen) // accordion: nejvýš jedna otevřená
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
@@ -244,8 +244,8 @@ export default function App() {
             <option value="flat">Bez seskupení</option>
           </select>
           <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={sel} aria-label="Řazení druhů">
-            <option value="count">Nejvíc produktů</option>
             <option value="discount">Největší sleva</option>
+            <option value="count">Nejvíc produktů</option>
             <option value="cheapest">Nejlevnější</option>
             <option value="name">Abecedně</option>
           </select>
