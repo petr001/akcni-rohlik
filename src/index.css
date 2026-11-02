@@ -93,21 +93,13 @@ body {
   animation: shimmer 1.4s linear infinite;
 }
 
-/* Plynulé sbalení/rozbalení: výška přes grid-template-rows 0fr↔1fr. Sbalený obsah není vidět ani fokusovatelný. */
-.fold {
-  display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
-  transition: grid-template-rows .5s cubic-bezier(.45,.05,.25,1), opacity .3s ease, visibility 0s .5s;
-}
-.fold[data-open="true"] {
-  grid-template-rows: 1fr; opacity: 1; visibility: visible;
-  transition: grid-template-rows .5s cubic-bezier(.45,.05,.25,1), opacity .4s ease .08s, visibility 0s;
-}
-.fold > div { overflow: hidden; min-height: 0 }
+/* Karty mimo obrazovku se nevykreslují (padding kolem kompenzuje ořez stínu při contain: paint). */
+.cv { content-visibility: auto; contain-intrinsic-size: auto 340px }
+html { overflow-anchor: none } /* poskakování řešíme ručně v App.settle */
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .folder-in, .folder-out, .pop-in, .bump, .check, .skeleton { animation: none !important }
   .fade, .fade-out { animation-duration: .01ms !important }
   .spin { animation-duration: 2s !important }
-  .fold { transition-duration: .15s, .15s, 0s !important }
   * { scroll-behavior: auto !important }
 }

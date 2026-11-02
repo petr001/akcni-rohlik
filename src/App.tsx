@@ -3,7 +3,7 @@ import type { Cart, Deals, Group, Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
-import { Collapse } from './Collapse'
+import { Accordion, DURATION, reducedMotion } from './Accordion'
 import { Preview } from './Preview'
 import { kc } from './format'
 
@@ -171,11 +171,28 @@ export default function App() {
       else localStorage.setItem(KEY, JSON.stringify(id))
     } catch {}
   }
-  const toggle = (id: number) => changeOpen(openSection === id ? null : id)
+  /** Drží nadpis na místě, dokud se jedna sekce zavírá a druhá otevírá (jinak by stránka poskakovala), a pak plynule doscrolluje. */
+  const settle = (id: number | null, scrollAfter: boolean) => {
+    const h = id !== null ? document.querySelector(`#cat-${id} h2`) : null
+    if (!h) return
+    let prev = h.getBoundingClientRect().top
+    const t0 = performance.now()
+    const step = () => {
+      const top = h.getBoundingClientRect().top
+      if (Math.abs(top - prev) > 0.5) scrollBy({ top: top - prev, behavior: 'instant' })
+      if (performance.now() - t0 < DURATION + 40) requestAnimationFrame(step)
+      else if (scrollAfter) document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+    }
+    requestAnimationFrame(step)
+  }
+  const toggle = (id: number) => {
+    const opening = openSection !== id
+    changeOpen(opening ? id : null)
+    settle(id, opening)
+  }
   const jump = (id: number) => {
     changeOpen(id)
-    // počkej, až se předchozí sekce zavře, a pak na otevřenou skoč
-    setTimeout(() => document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth' }), 520)
+    settle(id, true)
   }
   const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
 
@@ -275,22 +292,25 @@ export default function App() {
                     </button>
                   </h2>
                 )}
-                {sec.name && (
-                  <Collapse open={!open} id={`cat-${sec.id}-preview`}>
+                <Accordion
+                  open={open}
+                  id={`cat-${sec.id}-body`}
+                  preview={
                     <Preview
                       groups={sec.groups}
                       onOpenSection={() => toggle(sec.id)}
                       onOpenGroup={(g, rect) => { setOrigin(rect); setOpen(g.id) }}
                     />
-                  </Collapse>
-                )}
-                <Collapse open={open} id={`cat-${sec.id}-body`}>
+                  }
+                >
                   <div className="grid grid-cols-2 gap-3.5 px-1 pb-4 pt-1 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {sec.groups.map((g, i) => (
-                      <GroupCard key={g.id} group={g} index={i} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
+                    {sec.groups.map((g) => (
+                      <div key={g.id} className="cv -m-2 p-2">
+                        <GroupCard group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
+                      </div>
                     ))}
                   </div>
-                </Collapse>
+                </Accordion>
               </section>
             )
           })}
