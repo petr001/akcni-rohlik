@@ -85,6 +85,17 @@ export default function App() {
     return () => clearInterval(t)
   }, [deals, loading])
 
+  // Aktivní chip držíme viditelný jen vodorovně v liště (stránka se kvůli tomu nescrolluje).
+  useEffect(() => {
+    if (openSection === null) return
+    document.querySelectorAll<HTMLElement>(`nav[aria-label="Kategorie"] [data-chip="${openSection}"]`).forEach((chip) => {
+      const nav = chip.parentElement as HTMLElement
+      if (!nav.offsetParent) return
+      const left = chip.offsetLeft - (nav.clientWidth - chip.offsetWidth) / 2
+      nav.scrollTo({ left, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    })
+  }, [openSection, deals])
+
   const loadCart = useCallback(async () => {
     const r = await fetch('/api/cart')
     const j = await r.json()
@@ -217,13 +228,15 @@ export default function App() {
   const sel = 'h-9 min-w-[8.5rem] flex-1 rounded-full md:min-w-0 border border-line bg-surface px-3 text-sm font-medium shadow-card'
   const chips =
     view !== 'flat' && sections.length > 1 ? (
-      <nav className="flex flex-wrap gap-1" aria-label="Kategorie">
+      <nav className="chips-scroll relative -mx-3 flex flex-nowrap gap-1 overflow-x-auto px-3 py-0.5" aria-label="Kategorie">
         {sections.map((sec) => (
           <a
             key={sec.id}
             href={`#cat-${sec.id}`}
             onClick={(e) => { e.preventDefault(); jump(sec.id) }}
-            className="inline-flex items-center rounded-md border border-line bg-surface px-2 py-0.5 text-xs font-medium transition hover:border-accent hover:text-accent active:scale-95 max-md:min-h-8 max-md:px-2.5"
+            aria-current={sec.id === openSection ? 'true' : undefined}
+            data-chip={sec.id}
+            className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md border bg-surface px-2 py-0.5 text-xs font-medium transition hover:border-accent hover:text-accent active:scale-95 max-md:min-h-8 max-md:px-2.5 ${sec.id === openSection ? 'border-accent text-accent' : 'border-line'}`}
           >
             {sec.name}
           </a>

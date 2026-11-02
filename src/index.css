@@ -114,3 +114,10 @@ html { overflow-anchor: none }
   .spin { animation-duration: 2s !important }
   * { scroll-behavior: auto !important }
 }
+
+/* Lišta chipů: jeden řádek, vodorovný posun bez posuvníku, jemný fade na okrajích. */
+.chips-scroll {
+  scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scroll-behavior: smooth;
+  mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+}
+.chips-scroll::-webkit-scrollbar { display: none }
