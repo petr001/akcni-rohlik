@@ -4,6 +4,7 @@ import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
 import { Fold } from './Fold'
+import { CartIcon } from './CartIcon'
 import { Preview } from './Preview'
 import { kc } from './format'
 
@@ -184,7 +185,7 @@ export default function App() {
       else localStorage.setItem(KEY, JSON.stringify(id))
     } catch {}
   }
-  /** Po skončení přechodu výšky jednou plynule doscrolluje na otevřenou sekci. */
+  /** Skok z chipu v liště kategorií: po skončení přechodu výšky plynule doscrolluje na sekci (jediné místo, kde se scrolluje). */
   const scrollWhenDone = (id: number) => {
     const body = document.getElementById(`cat-${id}-body`)
     let done = false
@@ -202,9 +203,7 @@ export default function App() {
     setTimeout(go, 800) // pojistka
   }
   const toggle = (id: number) => {
-    const opening = openSection !== id
-    changeOpen(opening ? id : null)
-    if (opening) scrollWhenDone(id)
+    changeOpen(openSection === id ? null : id) // otevření sekce stránku neposouvá
   }
   const jump = (id: number) => {
     changeOpen(id)
@@ -338,7 +337,7 @@ export default function App() {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
         <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full bg-ink py-2 pl-5 pr-2 text-bg shadow-pop">
           <span key={cart?.count} className={`whitespace-nowrap font-semibold ${cart ? 'bump' : ''}`}>
-            🛒 {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}
+            <CartIcon className="mr-1.5 inline h-5 w-5 align-[-4px]" /> {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}
           </span>
           {cartError && <span className="truncate text-sm text-sale">{cartError}</span>}
           <a

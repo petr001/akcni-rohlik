@@ -1,6 +1,7 @@
 import type { Product } from './types'
 import { kc, pct, till } from './format'
 import { Img } from './Img'
+import { CartIcon } from './CartIcon'
 
 interface Props {
   p: Product
@@ -33,7 +34,7 @@ export function ProductCard({ p, inCart, busy, added, onAdd }: Props) {
           disabled={busy}
           aria-label={`Přidat ${p.name} do košíku`}
           className={`relative flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-sm font-bold transition duration-200 active:scale-90 ${
-            added ? 'bg-accent-soft text-accent' : 'bg-accent text-accent-ink hover:brightness-110'
+            added ? 'bg-accent-soft text-accent ring-2 ring-accent' : 'bg-accent text-accent-ink shadow-md hover:brightness-110'
           }`}
         >
           {busy ? (
@@ -41,10 +42,10 @@ export function ProductCard({ p, inCart, busy, added, onAdd }: Props) {
           ) : added ? (
             <span className="check">✓</span>
           ) : (
-            <>🛒&nbsp;+</>
+            <span className="flex items-center gap-1"><CartIcon className="h-5 w-5" />+</span>
           )}
           {inCart > 0 && !busy && (
-            <span key={inCart} className="bump absolute -right-1.5 -top-1.5 rounded-full bg-ink px-1.5 text-[11px] font-bold text-bg">
+            <span key={inCart} className="bump absolute -right-1.5 -top-1.5 rounded-full bg-ink px-1.5 text-[11px] font-extrabold text-bg ring-2 ring-surface">
               {inCart}
             </span>
           )}
