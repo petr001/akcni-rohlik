@@ -235,7 +235,7 @@ export default function App() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 pb-32 pt-3">
       <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
-        <div className="flex flex-wrap items-center gap-2 pb-2.5 md:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-2 py-2.5 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
             <span className="hidden lg:inline">Fast Rohlík</span>
