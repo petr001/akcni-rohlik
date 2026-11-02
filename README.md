@@ -9,7 +9,7 @@ s obrázkem, akční cenou, původní cenou, slevou a tlačítkem do košíku.
 
 ```bash
 npm install
-cp .env.example .env     # a vyplň přihlašovací údaje (jen kvůli košíku)
+cp .env.example .env     # a doplň SESSION_SECRET
 npm run dev              # API (Hono, :3001) + Vite (:5173)
 ```
 
@@ -21,13 +21,16 @@ Tlačítko „Obnovit“ vynutí nové stažení.
 
 | Proměnná | Význam |
 | --- | --- |
-| `ROHLIK_USERNAME` | e-mail k účtu na rohlik.cz (jen pro košík) |
-| `ROHLIK_PASSWORD` | heslo k účtu na rohlik.cz |
+| `SESSION_SECRET` | tajný klíč k šifrování session cookie (`openssl rand -base64 32`) |
 | `APP_PASSWORD` | volitelné; když je nastavené, `/api/*` vyžaduje HTTP Basic s tímto heslem |
 
-Seznam akcí je na Rohlíku veřejný, přihlášení se používá jen pro košík. Údaje a session cookie Rohlíku
-drží pouze backend, do frontendu ani do gitu se nedostanou. Objednávku dokončíš na rohlik.cz / v appce –
-košík je sdílený s účtem.
+## Přihlášení
+
+Prohlížení akcí je veřejné, přihlášení k účtu na rohlik.cz se vyžaduje až při přidání do košíku
+(formulář v appce, vyplní ho správce hesel). `POST /api/login` přepošle údaje Rohlíku a heslo ihned
+zahodí – nikam se neukládá ani neloguje. Session Rohlíku je uložená jen v šifrovaném cookie
+(`HttpOnly`, `SameSite=Lax`, `Secure` mimo localhost, platnost 12 h), backend je tedy bez stavu.
+Objednávku dokončíš na rohlik.cz / v appce – košík je sdílený s účtem.
 
 ## Jak to funguje
 
@@ -48,7 +51,7 @@ Architektura je na to připravená (`api/index.ts` + `vercel.json` s rewrite `/a
 limit ~10 s na funkci splňuje stahování po jedné hlavní kategorii). Před nasazením je potřeba:
 
 1. Napsat sdílený adaptér cache (Vercel Blob / KV) místo `MemoryCache` v `server/cache.ts` – paměť funkce se mezi instancemi nesdílí.
-2. Nastavit `ROHLIK_USERNAME`, `ROHLIK_PASSWORD` a `APP_PASSWORD` (nebo zapnout Vercel Authentication) v nastavení projektu `fast-rohlik`. Repo nech private.
+2. Nastavit `SESSION_SECRET` a `APP_PASSWORD` (nebo zapnout Vercel Authentication) v nastavení projektu `fast-rohlik`. Repo nech private.
 3. Nasazení zatím nebylo zkoušeno.
 
 ## Upozornění

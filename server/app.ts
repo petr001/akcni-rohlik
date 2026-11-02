@@ -1,6 +1,7 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { buildPart, getDeals, topCategories } from './deals.js'
 import { Session } from './rohlik.js'
+import { clearSession, readSession, saveSession } from './session.js'
 
 /**
  * Jediná Hono app: lokálně ji servíruje server/dev.ts, na Vercelu api/index.ts.
@@ -21,12 +22,9 @@ app.use('*', async (c, next) => {
 
 app.onError((e, c) => c.json({ error: e.message }, ((e as any).status ?? 502) as 502))
 
-async function loggedIn(): Promise<Session> {
-  const email = process.env.ROHLIK_USERNAME
-  const password = process.env.ROHLIK_PASSWORD
-  if (!email || !password) throw Object.assign(new Error('Chybí ROHLIK_USERNAME / ROHLIK_PASSWORD v .env'), { status: 503 })
-  const s = new Session()
-  await s.login(email, password)
+function requireLogin(c: Context) {
+  const s = readSession(c)
+  if (!s) throw Object.assign(new Error('Pro košík se přihlas.'), { status: 401 })
   return s
 }
 
@@ -50,14 +48,41 @@ app.post('/deals/part/:id', async (c) => {
   return c.json({ topId: id, groups: part.groups.length })
 })
 
-app.get('/cart', async (c) => c.json(await cartSummary(await loggedIn())))
+app.get('/me', (c) => {
+  const s = readSession(c)
+  return c.json({ loggedIn: !!s, email: s?.email ?? null })
+})
+
+app.post('/login', async (c) => {
+  const { email, password } = await c.req.json().catch(() => ({}))
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password)
+    return c.json({ error: 'Vyplň e-mail a heslo.' }, 400)
+  const s = new Session()
+  try {
+    await s.login(email.trim(), password)
+  } catch (e: any) {
+    // Heslo se nikam neloguje.
+    if (e.status === 401 || e.status === 403 || e.status === 400)
+      return c.json({ error: 'Rohlík přihlášení odmítl – zkontroluj e-mail a heslo (účet může vyžadovat i další ověření přímo na rohlik.cz).' }, 401)
+    return c.json({ error: `Přihlášení k Rohlíku se nepovedlo: ${e.message}` }, 502)
+  }
+  saveSession(c, s, email.trim())
+  return c.json({ loggedIn: true, email: email.trim() })
+})
+
+app.post('/logout', (c) => {
+  clearSession(c)
+  return c.json({ loggedIn: false })
+})
+
+app.get('/cart', async (c) => c.json(await cartSummary(requireLogin(c).session)))
 app.post('/cart', async (c) => {
+  const { session } = requireLogin(c)
   const { productId, quantity = 1 } = await c.req.json().catch(() => ({}))
   if (!Number.isInteger(productId)) return c.json({ error: 'productId' }, 400)
-  const s = await loggedIn()
-  await s.req('/services/frontend-service/v2/cart', {
+  await session.req('/services/frontend-service/v2/cart', {
     method: 'POST',
     body: JSON.stringify({ actionId: null, productId, quantity, recipeId: null, source: 'true:Shopping Lists' }),
   })
-  return c.json(await cartSummary(s))
+  return c.json(await cartSummary(session))
 })

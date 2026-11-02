@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Cart, Deals, Group, Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
+import { LoginForm } from './LoginForm'
 import { kc } from './format'
 
 type Sort = 'count' | 'discount' | 'name'
@@ -18,6 +19,9 @@ export default function App() {
   const [sort, setSort] = useState<Sort>('count')
   const [loading, setLoading] = useState(false)
 
+  const [me, setMe] = useState<string | null>(null) // e-mail přihlášeného
+  const [showLogin, setShowLogin] = useState(false)
+  const [pending, setPending] = useState<Product | null>(null) // produkt čekající na přihlášení
   const [progress, setProgress] = useState<string | null>(null)
 
   /** Akce se stahují po hlavních kategoriích (každá je samostatný krátký požadavek). */
@@ -49,18 +53,38 @@ export default function App() {
     }
   }, [])
 
+  const loadCart = useCallback(async () => {
+    const r = await fetch('/api/cart')
+    const j = await r.json()
+    if (r.status === 401) {
+      setMe(null)
+      setCart(null)
+      return
+    }
+    if (!r.ok) throw new Error(j.error)
+    setCart(j)
+  }, [])
+
   useEffect(() => {
     load()
-    fetch('/api/cart')
-      .then(async (r) => {
-        const j = await r.json()
-        if (!r.ok) throw new Error(j.error)
-        setCart(j)
+    fetch('/api/me')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.loggedIn) {
+          setMe(j.email)
+          return loadCart()
+        }
       })
       .catch((e) => setCartError(e.message))
-  }, [load])
+  }, [load, loadCart])
 
-  const add = async (p: Product) => {
+  const add = (p: Product) => {
+    if (me) return send(p)
+    setPending(p)
+    setShowLogin(true)
+  }
+
+  const send = async (p: Product) => {
     setBusyId(p.id)
     setCartError(null)
     try {
@@ -70,6 +94,12 @@ export default function App() {
         body: JSON.stringify({ productId: p.id, quantity: 1 }),
       })
       const j = await r.json()
+      if (r.status === 401) {
+        setMe(null)
+        setPending(p)
+        setShowLogin(true)
+        return
+      }
       if (!r.ok) throw new Error(j.error)
       setCart(j)
     } catch (e) {
@@ -77,6 +107,19 @@ export default function App() {
     } finally {
       setBusyId(null)
     }
+  }
+
+  const loggedIn = (email: string) => {
+    setMe(email)
+    setShowLogin(false)
+    if (pending) send(pending)
+    else loadCart().catch((e) => setCartError(e.message))
+    setPending(null)
+  }
+  const logout = async () => {
+    await fetch('/api/logout', { method: 'POST' })
+    setMe(null)
+    setCart(null)
   }
 
   const groups = useMemo(() => {
@@ -111,6 +154,11 @@ export default function App() {
         <button onClick={() => load(true)} disabled={loading} className="rounded-full bg-stone-200 px-3 py-2 text-sm disabled:opacity-50">
           {loading ? 'Načítám…' : '↻ Obnovit'}
         </button>
+        {me ? (
+          <button onClick={logout} className="rounded-full bg-stone-200 px-3 py-2 text-sm" title={me}>Odhlásit</button>
+        ) : (
+          <button onClick={() => setShowLogin(true)} className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Přihlásit</button>
+        )}
       </header>
 
       {error && <p className="rounded-xl bg-red-100 p-3 text-red-800">Chyba: {error}</p>}
@@ -129,11 +177,12 @@ export default function App() {
         </>
       )}
 
+      {showLogin && <LoginForm onDone={loggedIn} onClose={() => { setShowLogin(false); setPending(null) }} />}
       {openGroup && <Folder group={openGroup} quantities={cart?.quantities ?? {}} busyId={busyId} onAdd={add} onClose={closeFolder} />}
 
       <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
         <div className="flex max-w-full items-center gap-3 rounded-full bg-stone-900 px-5 py-3 text-white shadow-xl">
-          <span>🛒 {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : '—'}</span>
+          <span>🛒 {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}</span>
           {cartError && <span className="truncate text-sm text-amber-300">{cartError}</span>}
           <a href="https://www.rohlik.cz/" target="_blank" rel="noreferrer" className="rounded-full bg-emerald-500 px-3 py-1 text-sm font-semibold">
             Dokončit na Rohlíku →
