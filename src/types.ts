@@ -49,3 +49,16 @@ export function subgroups(groups: Group[]): { subId: number; title: string; grou
   }
   return out
 }
+
+const TONES = [152, 28, 212, 330, 268, 86, 8]
+/** Jedna souvislá řada karet v pořadí „z regálu“; podskupiny se poznají podle barevného tónu (střídá se) a příznaku `first`. */
+export function cardsOf(groups: Group[]): { g: Group; tone: number; first: boolean }[] {
+  let idx = -1
+  let prev: number | null = null
+  return groups.map((g) => {
+    const first = g.subId !== prev
+    if (first) idx++
+    prev = g.subId
+    return { g, tone: TONES[idx % TONES.length], first }
+  })
+}

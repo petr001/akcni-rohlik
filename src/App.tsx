@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { subgroups, topDeal, type Cart, type Deals, type Group, type Product } from './types'
+import { cardsOf, topDeal, type Cart, type Deals, type Group, type Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
@@ -321,18 +321,9 @@ export default function App() {
                   </Fold>
                 )}
                 <Fold open={open} id={`cat-${sec.id}-body`}>
-                  <div className="px-2 pb-5 pt-2">
-                    {subgroups(sec.groups).map((sub, si, all) => (
-                      <div key={`${sub.subId}-${si}`} className={si ? 'mt-4' : ''}>
-                        {all.length > 1 && sub.title && (
-                          <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">{sub.title}</h3>
-                        )}
-                        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
-                          {sub.groups.map((g) => (
-                            <GroupCard key={g.id} group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
-                          ))}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
+                    {cardsOf(sec.groups).map(({ g, tone, first }) => (
+                      <GroupCard key={g.id} group={g} tone={tone} first={first} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
                     ))}
                   </div>
                 </Fold>
