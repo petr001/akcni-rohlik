@@ -18,6 +18,9 @@ export interface Group {
   name: string
   parent: string
   products: Product[]
+  topId: number
+  topName: string
+  topOrder: number
 }
 export interface Deals {
   fetchedAt: string | null

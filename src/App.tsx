@@ -5,7 +5,9 @@ import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
 import { kc } from './format'
 
-type Sort = 'count' | 'discount' | 'name'
+type Sort = 'count' | 'discount' | 'cheapest' | 'name'
+type View = 'rohlik' | 'abc' | 'flat'
+const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
 const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
 export default function App() {
@@ -17,6 +19,7 @@ export default function App() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('count')
+  const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
 
   const [me, setMe] = useState<string | null>(null) // e-mail přihlášeného
@@ -122,16 +125,28 @@ export default function App() {
     setCart(null)
   }
 
-  const groups = useMemo(() => {
+  const sections = useMemo(() => {
     if (!deals) return []
     const q = norm(query.trim())
     let list = deals.groups
-    if (q) list = list.filter((g) => norm(g.name + ' ' + g.parent).includes(q) || g.products.some((p) => norm(p.name).includes(q)))
-    const s = [...list]
-    if (sort === 'discount') s.sort((a, b) => b.products[0].discount - a.products[0].discount)
-    if (sort === 'name') s.sort((a, b) => a.name.localeCompare(b.name, 'cs'))
-    return s
-  }, [deals, query, sort])
+    if (q) list = list.filter((g) => norm(g.name + ' ' + g.parent + ' ' + g.topName).includes(q) || g.products.some((p) => norm(p.name).includes(q)))
+    const inner: Record<Sort, (a: Group, b: Group) => number> = {
+      count: (a, b) => b.products.length - a.products.length,
+      discount: (a, b) => b.products[0].discount - a.products[0].discount,
+      cheapest: (a, b) => Math.min(...a.products.map((p) => p.salePrice)) - Math.min(...b.products.map((p) => p.salePrice)),
+      name: (a, b) => cmp(a.name, b.name),
+    }
+    const sorted = [...list].sort(inner[sort])
+    if (view === 'flat') return [{ id: 0, name: '', groups: sorted }]
+    const by = new Map<number, { id: number; name: string; order: number; groups: Group[] }>()
+    for (const g of sorted) {
+      const sec = by.get(g.topId) ?? { id: g.topId, name: g.topName, order: g.topOrder, groups: [] }
+      sec.groups.push(g)
+      by.set(g.topId, sec)
+    }
+    return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
+  }, [deals, query, sort, view])
+  const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
 
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
   const closeFolder = useCallback(() => setOpen(null), [])
@@ -146,9 +161,15 @@ export default function App() {
           placeholder="Hledat druh nebo produkt…"
           className="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-2"
         />
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="rounded-full border border-stone-300 bg-white px-3 py-2">
-          <option value="count">Podle počtu</option>
-          <option value="discount">Podle slevy</option>
+        <select value={view} onChange={(e) => setView(e.target.value as View)} className="rounded-full border border-stone-300 bg-white px-3 py-2" aria-label="Seskupení">
+          <option value="rohlik">Kategorie (pořadí Rohlíku)</option>
+          <option value="abc">Kategorie (abecedně)</option>
+          <option value="flat">Bez seskupení</option>
+        </select>
+        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="rounded-full border border-stone-300 bg-white px-3 py-2" aria-label="Řazení druhů">
+          <option value="count">Nejvíc produktů</option>
+          <option value="discount">Největší sleva</option>
+          <option value="cheapest">Nejlevnější</option>
           <option value="name">Abecedně</option>
         </select>
         <button onClick={() => load(true)} disabled={loading} className="rounded-full bg-stone-200 px-3 py-2 text-sm disabled:opacity-50">
@@ -159,6 +180,15 @@ export default function App() {
         ) : (
           <button onClick={() => setShowLogin(true)} className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Přihlásit</button>
         )}
+        {view !== 'flat' && sections.length > 1 && (
+          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1">
+            {sections.map((sec) => (
+              <a key={sec.id} href={`#cat-${sec.id}`} className="shrink-0 rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
+                {sec.name}
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
 
       {error && <p className="rounded-xl bg-red-100 p-3 text-red-800">Chyba: {error}</p>}
@@ -167,13 +197,22 @@ export default function App() {
       {deals && (
         <>
           <p className="mb-3 text-sm text-stone-500">
-            {deals.total} produktů v akci ve {groups.length} druzích · {deals.fetchedAt && `stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
+            {deals.total} produktů v akci ve {groupCount} druzích · {deals.fetchedAt && `stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {groups.map((g) => (
-              <GroupCard key={g.id} group={g} onOpen={() => setOpen(g.id)} />
-            ))}
-          </div>
+          {sections.map((sec) => (
+            <section key={sec.id} id={`cat-${sec.id}`} className="mb-8 scroll-mt-32">
+              {sec.name && (
+                <h2 className="mb-3 text-lg font-bold">
+                  {sec.name} <span className="text-sm font-normal text-stone-400">{sec.groups.length} druhů</span>
+                </h2>
+              )}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {sec.groups.map((g) => (
+                  <GroupCard key={g.id} group={g} onOpen={() => setOpen(g.id)} />
+                ))}
+              </div>
+            </section>
+          ))}
         </>
       )}
 

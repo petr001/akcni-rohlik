@@ -22,13 +22,19 @@ export interface Group {
   name: string
   parent: string
   products: Product[]
+  topId: number // hlavní kategorie Rohlíku
+  topName: string
+  topOrder: number // pořadí hlavní kategorie na Rohlíku
 }
+
+type PartGroup = Omit<Group, 'topId' | 'topName' | 'topOrder'>
 
 /** Akce jedné hlavní kategorie – stahuje se zvlášť, aby se vešlo do limitu funkce (~10 s). */
 export interface Part {
   topId: number
+  topName?: string
   fetchedAt: string
-  groups: Group[]
+  groups: PartGroup[]
 }
 
 export interface Deals {
@@ -82,7 +88,7 @@ export async function buildPart(topId: number): Promise<Part> {
   })
 
   const names = new Map((await categoryNames([...catIds])).map((c) => [c.id, c.name]))
-  const groups = new Map<number, Group>()
+  const groups = new Map<number, PartGroup>()
   for (const [pid, o] of owner) {
     const c = cards.get(pid)
     if (!c || c.archived || !c.prices || c.stock?.availabilityStatus === 'UNAVAILABLE') continue
@@ -118,7 +124,7 @@ export async function buildPart(topId: number): Promise<Part> {
     g.products.push(product)
   }
   const list = [...groups.values()].filter((g) => g.products.length)
-  const part: Part = { topId, fetchedAt: new Date().toISOString(), groups: list }
+  const part: Part = { topId, topName: names.get(topId) ?? '', fetchedAt: new Date().toISOString(), groups: list }
   await cache.set(`part-${topId}`, part)
   return part
 }
@@ -131,13 +137,14 @@ export async function getDeals(force = false): Promise<Deals> {
   for (const t of tops) {
     const part = await cache.get<Part>(`part-${t}`)
     if (part) parts.push(part)
-    if (force || !part || Date.now() - Date.parse(part.fetchedAt) > TTL) pending.push(t)
+    if (force || !part || part.topName === undefined || Date.now() - Date.parse(part.fetchedAt) > TTL) pending.push(t)
   }
   // Produkt může být ve více hlavních kategoriích → první výskyt vyhrává.
   const seen = new Set<number>()
   const byId = new Map<number, Group>()
   for (const part of parts)
-    for (const g of part.groups) {
+    for (const raw of part.groups) {
+      const g: Group = { ...raw, topId: part.topId, topName: part.topName ?? '', topOrder: tops.indexOf(part.topId) }
       const products = g.products.filter((p) => !seen.has(p.id))
       products.forEach((p) => seen.add(p.id))
       if (!products.length) continue
