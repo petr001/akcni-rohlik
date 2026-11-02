@@ -5,6 +5,7 @@
   --bg: #f6f3ec;
   --surface: #ffffff;
   --surface-2: #efebe1;
+  --header: #e8e2d2;
   --ink: #1d231f;
   --muted: #6a726c;
   --line: #e3ded1;
@@ -23,6 +24,7 @@
     --bg: #101411;
     --surface: #1a1f1b;
     --surface-2: #232a24;
+    --header: #1c231e;
     --ink: #eef2ee;
     --muted: #9aa59d;
     --line: #2b332d;
@@ -42,6 +44,7 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-header: var(--header);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -102,6 +105,8 @@ body {
 .fold-in { overflow: hidden; min-height: 0; opacity: 0; transition: opacity .2s ease }
 .fold[data-open="true"] > .fold-in { opacity: 1; transition: opacity .3s ease .12s }
 html { overflow-anchor: none }
+/* Hlavička: plná barva (bez backdrop-filter kvůli plynulému scrollu), akcentní proužek bez změny výšky a stín. */
+.app-header { background: var(--header); box-shadow: inset 0 3px 0 var(--accent), 0 4px 12px -6px rgb(0 0 0 / .35); }
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .folder-in, .folder-out, .pop-in, .bump, .check, .skeleton { animation: none !important }

@@ -234,7 +234,7 @@ export default function App() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-32 pt-3">
-      <header className="sticky top-0 z-30 -mx-4 mb-4 border-b border-line/70 bg-bg/85 px-4 py-2 backdrop-blur-xl">
+      <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
         <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
