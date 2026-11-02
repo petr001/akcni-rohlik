@@ -3,6 +3,7 @@ import type { Cart, Deals, Group, Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
+import { Collapse } from './Collapse'
 import { kc } from './format'
 
 type Sort = 'count' | 'discount' | 'cheapest' | 'name'
@@ -25,6 +26,8 @@ export default function App() {
   const [cart, setCart] = useState<Cart | null>(null)
   const [cartError, setCartError] = useState<string | null>(null)
   const [open, setOpen] = useState<number | null>(null)
+  const [origin, setOrigin] = useState<DOMRect | null>(null)
+  const [addedId, setAddedId] = useState<number | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('count')
@@ -115,6 +118,8 @@ export default function App() {
       }
       if (!r.ok) throw new Error(j.error)
       setCart(j)
+      setAddedId(p.id)
+      setTimeout(() => setAddedId((x) => (x === p.id ? null : x)), 1300)
     } catch (e) {
       setCartError((e as Error).message)
     } finally {
@@ -175,47 +180,59 @@ export default function App() {
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
   const closeFolder = useCallback(() => setOpen(null), [])
 
+  const sel = 'rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-medium shadow-card'
+  const btn = 'rounded-full bg-surface-2 px-3.5 py-2 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
+
   return (
-    <div className="mx-auto max-w-7xl px-3 pb-28 pt-4">
-      <header className="md:sticky top-0 z-30 -mx-3 mb-4 flex flex-wrap items-center gap-3 bg-stone-100/90 px-3 py-2 backdrop-blur">
-        <h1 className="text-xl font-extrabold">⚡ Fast Rohlík</h1>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Hledat druh nebo produkt…"
-          className="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-2"
-        />
-        <select value={view} onChange={(e) => setView(e.target.value as View)} className="rounded-full border border-stone-300 bg-white px-3 py-2" aria-label="Seskupení">
-          <option value="rohlik">Kategorie (pořadí Rohlíku)</option>
-          <option value="abc">Kategorie (abecedně)</option>
-          <option value="flat">Bez seskupení</option>
-        </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="rounded-full border border-stone-300 bg-white px-3 py-2" aria-label="Řazení druhů">
-          <option value="count">Nejvíc produktů</option>
-          <option value="discount">Největší sleva</option>
-          <option value="cheapest">Nejlevnější</option>
-          <option value="name">Abecedně</option>
-        </select>
-        <button onClick={() => load(true)} disabled={loading} className="rounded-full bg-stone-200 px-3 py-2 text-sm disabled:opacity-50">
-          {loading ? 'Načítám…' : '↻ Obnovit'}
-        </button>
-        {view !== 'flat' && (
-          <button
-            onClick={() => changeCollapsed(collapsed.length >= allIds.length ? [] : allIds)}
-            className="rounded-full bg-stone-200 px-3 py-2 text-sm"
-          >
-            {collapsed.length >= allIds.length ? 'Rozbalit vše' : 'Sbalit vše'}
+    <div className="mx-auto max-w-7xl px-4 pb-32 pt-3">
+      <header className="z-30 -mx-4 mb-5 border-b border-line/70 bg-bg/85 px-4 py-3 backdrop-blur-xl md:sticky md:top-0">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 className="mr-1 flex items-center gap-1.5 text-2xl font-black tracking-tight">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-lg text-accent-ink">⚡</span>
+            Fast Rohlík
+          </h1>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="🔍  Hledat druh nebo produkt…"
+            className="min-w-[12rem] flex-1 rounded-full border border-line bg-surface px-4 py-2.5 shadow-card placeholder:text-muted"
+          />
+          {me ? (
+            <button onClick={logout} className={btn} title={me}>Odhlásit</button>
+          ) : (
+            <button onClick={() => setShowLogin(true)} className="rounded-full bg-accent px-4 py-2 text-sm font-bold text-accent-ink transition active:scale-95">Přihlásit</button>
+          )}
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <select value={view} onChange={(e) => setView(e.target.value as View)} className={sel} aria-label="Seskupení">
+            <option value="rohlik">Kategorie (pořadí Rohlíku)</option>
+            <option value="abc">Kategorie (abecedně)</option>
+            <option value="flat">Bez seskupení</option>
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={sel} aria-label="Řazení druhů">
+            <option value="count">Nejvíc produktů</option>
+            <option value="discount">Největší sleva</option>
+            <option value="cheapest">Nejlevnější</option>
+            <option value="name">Abecedně</option>
+          </select>
+          {view !== 'flat' && (
+            <button onClick={() => changeCollapsed(collapsed.length >= allIds.length ? [] : allIds)} className={btn}>
+              {collapsed.length >= allIds.length ? 'Rozbalit vše' : 'Sbalit vše'}
+            </button>
+          )}
+          <button onClick={() => load(true)} disabled={loading} className={btn}>
+            <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span> {loading ? 'Načítám' : 'Obnovit'}
           </button>
-        )}
-        {me ? (
-          <button onClick={logout} className="rounded-full bg-stone-200 px-3 py-2 text-sm" title={me}>Odhlásit</button>
-        ) : (
-          <button onClick={() => setShowLogin(true)} className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Přihlásit</button>
-        )}
+        </div>
         {view !== 'flat' && sections.length > 1 && (
-          <nav className="flex w-full flex-wrap gap-2">
+          <nav className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Kategorie">
             {sections.map((sec) => (
-              <a key={sec.id} href={`#cat-${sec.id}`} onClick={(e) => { e.preventDefault(); jump(sec.id) }} className="rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
+              <a
+                key={sec.id}
+                href={`#cat-${sec.id}`}
+                onClick={(e) => { e.preventDefault(); jump(sec.id) }}
+                className="rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium transition hover:border-accent hover:text-accent active:scale-95"
+              >
                 {sec.name}
               </a>
             ))}
@@ -223,39 +240,50 @@ export default function App() {
         )}
       </header>
 
-      {error && <p className="rounded-xl bg-red-100 p-3 text-red-800">Chyba: {error}</p>}
-      {progress && <p className="mb-3 text-sm text-amber-700">{progress}</p>}
-      {!deals && !error && <p className="py-20 text-center text-stone-500">Načítám…</p>}
+      {error && <p className="rounded-2xl bg-sale/15 p-3 text-sale">Chyba: {error}</p>}
+      {progress && (
+        <p className="mb-3 flex items-center gap-2 text-sm text-warn">
+          <span className="spin h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent" /> {progress}
+        </p>
+      )}
+      {!deals && !error && <Skeleton />}
       {deals && (
         <>
-          <p className="mb-3 text-sm text-stone-500">
-            {deals.total} produktů v akci ve {groupCount} druzích · {deals.fetchedAt && `stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
+          <p className="mb-4 text-sm text-muted">
+            <b className="text-ink">{deals.total}</b> produktů v akci ve <b className="text-ink">{groupCount}</b> druzích
+            {deals.fetchedAt && ` · stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
           {sections.map((sec) => {
             const open = searching || !collapsed.includes(sec.id) // při hledání se uložený stav nemění
             return (
-              <section key={sec.id} id={`cat-${sec.id}`} className="mb-6 scroll-mt-4 md:scroll-mt-48">
+              <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-4 md:scroll-mt-52">
                 {sec.name && (
-                  <h2 className="mb-3 text-lg font-bold">
+                  <h2 className="mb-3 border-b border-line pb-2">
                     <button
                       onClick={() => toggle(sec.id)}
                       aria-expanded={open}
                       aria-controls={`cat-${sec.id}-body`}
                       disabled={searching}
-                      className="flex items-center gap-2 text-left"
+                      className="group flex w-full items-center gap-3 text-left"
                     >
-                      <span className={`inline-block text-sm text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden>▶</span>
-                      {sec.name} <span className="text-sm font-normal text-stone-400">{sec.groups.length} druhů</span>
+                      <span
+                        aria-hidden
+                        className={`grid h-7 w-7 place-items-center rounded-full bg-surface-2 text-[10px] text-muted transition duration-300 group-hover:bg-accent-soft group-hover:text-accent ${open ? 'rotate-90' : ''}`}
+                      >
+                        ▶
+                      </span>
+                      <span className="text-xl font-extrabold tracking-tight">{sec.name}</span>
+                      <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-muted">{sec.groups.length} druhů</span>
                     </button>
                   </h2>
                 )}
-                {open && (
-                  <div id={`cat-${sec.id}-body`} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {sec.groups.map((g) => (
-                      <GroupCard key={g.id} group={g} onOpen={() => setOpen(g.id)} />
+                <Collapse open={open} id={`cat-${sec.id}-body`}>
+                  <div className="grid grid-cols-2 gap-3.5 px-1 pb-4 pt-1 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {sec.groups.map((g, i) => (
+                      <GroupCard key={g.id} group={g} index={i} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
                     ))}
                   </div>
-                )}
+                </Collapse>
               </section>
             )
           })}
@@ -263,17 +291,41 @@ export default function App() {
       )}
 
       {showLogin && <LoginForm onDone={loggedIn} onClose={() => { setShowLogin(false); setPending(null) }} />}
-      {openGroup && <Folder group={openGroup} quantities={cart?.quantities ?? {}} busyId={busyId} onAdd={add} onClose={closeFolder} />}
+      {openGroup && (
+        <Folder group={openGroup} origin={origin} quantities={cart?.quantities ?? {}} busyId={busyId} addedId={addedId} onAdd={add} onClose={closeFolder} />
+      )}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
-        <div className="flex max-w-full items-center gap-3 rounded-full bg-stone-900 px-5 py-3 text-white shadow-xl">
-          <span>🛒 {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}</span>
-          {cartError && <span className="truncate text-sm text-amber-300">{cartError}</span>}
-          <a href="https://www.rohlik.cz/" target="_blank" rel="noreferrer" className="rounded-full bg-emerald-500 px-3 py-1 text-sm font-semibold">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
+        <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full bg-ink py-2 pl-5 pr-2 text-bg shadow-pop">
+          <span key={cart?.count} className={`whitespace-nowrap font-semibold ${cart ? 'bump' : ''}`}>
+            🛒 {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}
+          </span>
+          {cartError && <span className="truncate text-sm text-sale">{cartError}</span>}
+          <a
+            href="https://www.rohlik.cz/"
+            target="_blank"
+            rel="noreferrer"
+            className="whitespace-nowrap rounded-full bg-accent px-4 py-2 text-sm font-bold text-accent-ink transition active:scale-95"
+          >
             Dokončit na Rohlíku →
           </a>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Skeleton() {
+  return (
+    <div aria-label="Načítám" className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {Array.from({ length: 12 }, (_, i) => (
+        <div key={i} className="rounded-3xl bg-surface p-2.5 shadow-card">
+          <div className="skeleton aspect-square rounded-2xl" />
+          <div className="skeleton mt-3 h-3 w-1/3 rounded" />
+          <div className="skeleton mt-2 h-5 w-4/5 rounded" />
+          <div className="skeleton mt-3 h-5 w-1/2 rounded" />
+        </div>
+      ))}
     </div>
   )
 }

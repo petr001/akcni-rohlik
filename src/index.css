@@ -1,7 +1,109 @@
 @import "tailwindcss";
 
-body { @apply bg-stone-100 text-stone-900 antialiased; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-@keyframes pop { from { opacity: 0; transform: scale(.92) } to { opacity: 1; transform: scale(1) } }
+/* Paleta: teplý papírový podklad, lesní zelená pro akce, korálová pro slevy. */
+:root {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --surface-2: #efebe1;
+  --ink: #1d231f;
+  --muted: #6a726c;
+  --line: #e3ded1;
+  --accent: #14684a;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe5;
+  --sale: #d8402b;
+  --sale-ink: #ffffff;
+  --warn: #9a5b00;
+  --shadow: 0 1px 2px rgb(40 30 10 / .06), 0 6px 18px -8px rgb(40 30 10 / .14);
+  --shadow-lg: 0 2px 4px rgb(40 30 10 / .08), 0 18px 36px -12px rgb(40 30 10 / .28);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101411;
+    --surface: #1a1f1b;
+    --surface-2: #232a24;
+    --ink: #eef2ee;
+    --muted: #9aa59d;
+    --line: #2b332d;
+    --accent: #4cc790;
+    --accent-ink: #072a1b;
+    --accent-soft: #1b3a2b;
+    --sale: #ff6a52;
+    --sale-ink: #2a0a04;
+    --warn: #f0b45a;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px -8px rgb(0 0 0 / .6);
+    --shadow-lg: 0 2px 4px rgb(0 0 0 / .5), 0 18px 40px -12px rgb(0 0 0 / .8);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-sale: var(--sale);
+  --color-sale-ink: var(--sale-ink);
+  --color-warn: var(--warn);
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- animace --- */
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.98) } to { opacity: 1; transform: none } }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
-.pop { animation: pop .18s ease-out }
-.fade { animation: fade .18s ease-out }
+@keyframes fade-out { to { opacity: 0 } }
+/* složka: roste z místa karty (--dx/--dy = posun středu karty od středu okna) */
+@keyframes folder-in { from { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 24px)) scale(.3) } to { opacity: 1; transform: none } }
+@keyframes folder-out { to { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 24px)) scale(.3) } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.94) translateY(8px) } to { opacity: 1; transform: none } }
+@keyframes bump { 0% { transform: scale(1) } 35% { transform: scale(1.18) } 100% { transform: scale(1) } }
+@keyframes shimmer { to { background-position: -200% 0 } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes check { from { transform: scale(.4); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+/* Náběh jen prvních karet v sekci (--i je omezené), zbytek se neanimuje. */
+.rise { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 35ms); }
+.fade { animation: fade .2s ease-out both }
+.fade-out { animation: fade-out .2s ease-in both }
+.folder-in { animation: folder-in .38s cubic-bezier(.2,.9,.25,1) both; transform-origin: center }
+.folder-out { animation: folder-out .26s cubic-bezier(.5,0,.8,.4) both }
+.pop-in { animation: pop-in .22s ease-out both }
+.bump { animation: bump .35s ease-out }
+.check { animation: check .25s cubic-bezier(.3,1.6,.5,1) both }
+.spin { animation: spin .7s linear infinite }
+.skeleton {
+  background: linear-gradient(100deg, var(--surface-2) 30%, color-mix(in srgb, var(--surface-2), var(--surface) 70%) 50%, var(--surface-2) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Plynulé sbalení/rozbalení: výška přes grid-template-rows 0fr↔1fr. */
+.fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.3,.8,.3,1), opacity .25s; opacity: 0 }
+.fold[data-open="true"] { grid-template-rows: 1fr; opacity: 1 }
+.fold > div { overflow: hidden; min-height: 0 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -32,22 +32,22 @@ export function LoginForm({ onDone, onClose }: Props) {
   }
 
   return (
-    <div className="fade fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-3 backdrop-blur-md" onClick={onClose}>
-      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="pop w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+    <div className="fade fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-3 backdrop-blur-md" onClick={onClose}>
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="pop-in w-full max-w-sm rounded-3xl bg-surface p-6 shadow-pop ring-1 ring-line">
         <h2 className="text-lg font-bold">Přihlášení k Rohlíku</h2>
-        <p className="mb-4 mt-1 text-sm text-stone-500">Potřebné pro košík. Heslo se pouze přepošle Rohlíku a neukládá se.</p>
+        <p className="mb-4 mt-1 text-sm text-muted">Potřebné pro košík. Heslo se pouze přepošle Rohlíku a neukládá se.</p>
         <label className="block text-sm font-medium" htmlFor="username">E-mail</label>
         <input id="username" name="username" type="email" autoComplete="username" required autoFocus
-          className="mb-3 mt-1 w-full rounded-xl border border-stone-300 px-3 py-2" />
+          className="mb-3 mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5" />
         <label className="block text-sm font-medium" htmlFor="password">Heslo</label>
         <input id="password" name="password" type="password" autoComplete="current-password" required
-          className="mb-3 mt-1 w-full rounded-xl border border-stone-300 px-3 py-2" />
-        {error && <p className="mb-3 rounded-xl bg-red-100 p-2 text-sm text-red-800">{error}</p>}
+          className="mb-3 mt-1 w-full rounded-xl border border-line bg-bg px-3 py-2.5" />
+        {error && <p className="mb-3 rounded-xl bg-sale/15 p-2 text-sm text-sale">{error}</p>}
         <div className="flex gap-2">
-          <button type="submit" disabled={busy} className="flex-1 rounded-full bg-emerald-600 py-2 font-semibold text-white disabled:opacity-50">
+          <button type="submit" disabled={busy} className="flex-1 rounded-full bg-accent py-2.5 font-bold text-accent-ink transition active:scale-95 disabled:opacity-50">
             {busy ? 'Přihlašuji…' : 'Přihlásit'}
           </button>
-          <button type="button" onClick={onClose} className="rounded-full bg-stone-200 px-4 py-2">Zrušit</button>
+          <button type="button" onClick={onClose} className="rounded-full bg-surface-2 px-4 py-2.5">Zrušit</button>
         </div>
       </form>
     </div>
