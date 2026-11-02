@@ -3,3 +3,11 @@ export const kc = (n: number) =>
 export const pct = (d: number) => `−${Math.round(d * 100)} %`
 export const till = (iso: string | null) =>
   iso ? `do ${new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}` : ''
+
+/** Emoji k hlavním kategoriím Rohlíku (hledá se podle klíčového slova v názvu, ať přežije drobnou změnu názvu). */
+const ICONS: [string, string][] = [
+  ['ovoce', '🥦'], ['mlé', '🥛'], ['maso', '🥩'], ['pekár', '🥐'], ['uzenin', '🥓'], ['bistro', '🥪'],
+  ['mraž', '🧊'], ['plant', '🌱'], ['trvanl', '🥫'], ['nápoj', '🥤'], ['speciální', '💪'], ['kosmet', '💄'],
+  ['drogerie', '🧴'], ['domácnost', '🏡'], ['dítě', '🍼'], ['zvíře', '🐾'], ['marks', '🛍️'],
+]
+export const categoryIcon = (name: string) => ICONS.find(([k]) => name.toLowerCase().includes(k))?.[1] ?? ''

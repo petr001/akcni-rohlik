@@ -6,7 +6,7 @@ import { LoginForm } from './LoginForm'
 import { Fold } from './Fold'
 import { CartIcon } from './CartIcon'
 import { Preview } from './Preview'
-import { kc } from './format'
+import { categoryIcon, kc } from './format'
 
 type View = 'rohlik' | 'abc' | 'flat'
 const KEY = 'fast-rohlik:open'
@@ -230,7 +230,7 @@ export default function App() {
             data-chip={sec.id}
             className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md border bg-surface px-2 py-0.5 text-xs font-medium transition hover:border-accent hover:text-accent active:scale-95 max-md:min-h-8 max-md:px-2.5 ${sec.id === openSection ? 'border-accent text-accent' : 'border-line'}`}
           >
-            {sec.name}
+            {categoryIcon(sec.name) && <span aria-hidden className="mr-1">{categoryIcon(sec.name)}</span>}{sec.name}
           </a>
         ))}
       </nav>
@@ -304,7 +304,7 @@ export default function App() {
                       >
                         ▶
                       </span>
-                      <span className="text-xl font-extrabold tracking-tight">{sec.name}</span>
+                      <span className="text-xl font-extrabold tracking-tight">{categoryIcon(sec.name) && <span aria-hidden className="mr-1.5">{categoryIcon(sec.name)}</span>}{sec.name}</span>
                       <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-muted">{sec.groups.length} druhů</span>
                     </button>
                   </h2>
