@@ -7,6 +7,15 @@ import { kc } from './format'
 
 type Sort = 'count' | 'discount' | 'cheapest' | 'name'
 type View = 'rohlik' | 'abc' | 'flat'
+const KEY = 'fast-rohlik:collapsed'
+const readCollapsed = (): number[] => {
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY) ?? '[]')
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'number') : []
+  } catch {
+    return []
+  }
+}
 const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
 const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
@@ -19,6 +28,7 @@ export default function App() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('count')
+  const [collapsed, setCollapsed] = useState<number[]>(readCollapsed)
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
 
@@ -146,6 +156,20 @@ export default function App() {
     }
     return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
   }, [deals, query, sort, view])
+  const searching = query.trim() !== ''
+  const changeCollapsed = (next: number[]) => {
+    setCollapsed(next)
+    try {
+      localStorage.setItem(KEY, JSON.stringify(next))
+    } catch {}
+  }
+  const toggle = (id: number) => changeCollapsed(collapsed.includes(id) ? collapsed.filter((x) => x !== id) : [...collapsed, id])
+  const jump = (id: number) => {
+    if (collapsed.includes(id)) changeCollapsed(collapsed.filter((x) => x !== id))
+    // počkej na vykreslení rozbalené sekce a pak na ni skoč
+    requestAnimationFrame(() => document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth' }))
+  }
+  const allIds = deals ? [...new Set(deals.groups.map((g) => g.topId))] : []
   const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
 
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
@@ -175,6 +199,14 @@ export default function App() {
         <button onClick={() => load(true)} disabled={loading} className="rounded-full bg-stone-200 px-3 py-2 text-sm disabled:opacity-50">
           {loading ? 'Načítám…' : '↻ Obnovit'}
         </button>
+        {view !== 'flat' && (
+          <button
+            onClick={() => changeCollapsed(collapsed.length >= allIds.length ? [] : allIds)}
+            className="rounded-full bg-stone-200 px-3 py-2 text-sm"
+          >
+            {collapsed.length >= allIds.length ? 'Rozbalit vše' : 'Sbalit vše'}
+          </button>
+        )}
         {me ? (
           <button onClick={logout} className="rounded-full bg-stone-200 px-3 py-2 text-sm" title={me}>Odhlásit</button>
         ) : (
@@ -183,7 +215,7 @@ export default function App() {
         {view !== 'flat' && sections.length > 1 && (
           <nav className="flex w-full flex-wrap gap-2">
             {sections.map((sec) => (
-              <a key={sec.id} href={`#cat-${sec.id}`} className="rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
+              <a key={sec.id} href={`#cat-${sec.id}`} onClick={(e) => { e.preventDefault(); jump(sec.id) }} className="rounded-full bg-white px-3 py-1 text-sm shadow-sm hover:bg-stone-200">
                 {sec.name}
               </a>
             ))}
@@ -199,20 +231,34 @@ export default function App() {
           <p className="mb-3 text-sm text-stone-500">
             {deals.total} produktů v akci ve {groupCount} druzích · {deals.fetchedAt && `stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
-          {sections.map((sec) => (
-            <section key={sec.id} id={`cat-${sec.id}`} className="mb-8 scroll-mt-4 md:scroll-mt-48">
-              {sec.name && (
-                <h2 className="mb-3 text-lg font-bold">
-                  {sec.name} <span className="text-sm font-normal text-stone-400">{sec.groups.length} druhů</span>
-                </h2>
-              )}
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {sec.groups.map((g) => (
-                  <GroupCard key={g.id} group={g} onOpen={() => setOpen(g.id)} />
-                ))}
-              </div>
-            </section>
-          ))}
+          {sections.map((sec) => {
+            const open = searching || !collapsed.includes(sec.id) // při hledání se uložený stav nemění
+            return (
+              <section key={sec.id} id={`cat-${sec.id}`} className="mb-6 scroll-mt-4 md:scroll-mt-48">
+                {sec.name && (
+                  <h2 className="mb-3 text-lg font-bold">
+                    <button
+                      onClick={() => toggle(sec.id)}
+                      aria-expanded={open}
+                      aria-controls={`cat-${sec.id}-body`}
+                      disabled={searching}
+                      className="flex items-center gap-2 text-left"
+                    >
+                      <span className={`inline-block text-sm text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden>▶</span>
+                      {sec.name} <span className="text-sm font-normal text-stone-400">{sec.groups.length} druhů</span>
+                    </button>
+                  </h2>
+                )}
+                {open && (
+                  <div id={`cat-${sec.id}-body`} className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {sec.groups.map((g) => (
+                      <GroupCard key={g.id} group={g} onOpen={() => setOpen(g.id)} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
+          })}
         </>
       )}
 
