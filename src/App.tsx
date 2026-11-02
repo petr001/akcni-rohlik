@@ -4,17 +4,19 @@ import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
 import { Collapse } from './Collapse'
+import { Preview } from './Preview'
 import { kc } from './format'
 
 type Sort = 'count' | 'discount' | 'cheapest' | 'name'
 type View = 'rohlik' | 'abc' | 'flat'
-const KEY = 'fast-rohlik:collapsed'
-const readCollapsed = (): number[] => {
+const KEY = 'fast-rohlik:open'
+const readOpen = (): number | null => {
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    return Array.isArray(v) ? v.filter((x) => typeof x === 'number') : []
+    localStorage.removeItem('fast-rohlik:collapsed') // starý klíč ze sbalitelných sekcí
+    const v = JSON.parse(localStorage.getItem(KEY) ?? 'null')
+    return typeof v === 'number' ? v : null
   } catch {
-    return []
+    return null
   }
 }
 const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
@@ -31,7 +33,7 @@ export default function App() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('count')
-  const [collapsed, setCollapsed] = useState<number[]>(readCollapsed)
+  const [openSection, setOpenSection] = useState<number | null>(readOpen) // accordion: nejvýš jedna otevřená
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
 
@@ -162,19 +164,19 @@ export default function App() {
     return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
   }, [deals, query, sort, view])
   const searching = query.trim() !== ''
-  const changeCollapsed = (next: number[]) => {
-    setCollapsed(next)
+  const changeOpen = (id: number | null) => {
+    setOpenSection(id)
     try {
-      localStorage.setItem(KEY, JSON.stringify(next))
+      if (id === null) localStorage.removeItem(KEY)
+      else localStorage.setItem(KEY, JSON.stringify(id))
     } catch {}
   }
-  const toggle = (id: number) => changeCollapsed(collapsed.includes(id) ? collapsed.filter((x) => x !== id) : [...collapsed, id])
+  const toggle = (id: number) => changeOpen(openSection === id ? null : id)
   const jump = (id: number) => {
-    if (collapsed.includes(id)) changeCollapsed(collapsed.filter((x) => x !== id))
-    // počkej na vykreslení rozbalené sekce a pak na ni skoč
-    requestAnimationFrame(() => document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth' }))
+    changeOpen(id)
+    // počkej, až se předchozí sekce zavře, a pak na otevřenou skoč
+    setTimeout(() => document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth' }), 520)
   }
-  const allIds = deals ? [...new Set(deals.groups.map((g) => g.topId))] : []
   const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
 
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
@@ -215,11 +217,6 @@ export default function App() {
             <option value="cheapest">Nejlevnější</option>
             <option value="name">Abecedně</option>
           </select>
-          {view !== 'flat' && (
-            <button onClick={() => changeCollapsed(collapsed.length >= allIds.length ? [] : allIds)} className={btn}>
-              {collapsed.length >= allIds.length ? 'Rozbalit vše' : 'Sbalit vše'}
-            </button>
-          )}
           <button onClick={() => load(true)} disabled={loading} className={btn}>
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span> {loading ? 'Načítám' : 'Obnovit'}
           </button>
@@ -254,7 +251,8 @@ export default function App() {
             {deals.fetchedAt && ` · stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
           {sections.map((sec) => {
-            const open = searching || !collapsed.includes(sec.id) // při hledání se uložený stav nemění
+            // Při hledání jsou otevřené všechny sekce s výsledky (uložený stav se nemění); v „Bez seskupení“ vždy.
+            const open = searching || !sec.name || openSection === sec.id
             return (
               <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-4 md:scroll-mt-52">
                 {sec.name && (
@@ -276,6 +274,15 @@ export default function App() {
                       <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-muted">{sec.groups.length} druhů</span>
                     </button>
                   </h2>
+                )}
+                {sec.name && (
+                  <Collapse open={!open} id={`cat-${sec.id}-preview`}>
+                    <Preview
+                      groups={sec.groups}
+                      onOpenSection={() => toggle(sec.id)}
+                      onOpenGroup={(g, rect) => { setOrigin(rect); setOpen(g.id) }}
+                    />
+                  </Collapse>
                 )}
                 <Collapse open={open} id={`cat-${sec.id}-body`}>
                   <div className="grid grid-cols-2 gap-3.5 px-1 pb-4 pt-1 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">

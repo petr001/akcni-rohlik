@@ -13,7 +13,7 @@ cp .env.example .env     # a doplň SESSION_SECRET
 npm run dev              # API (Hono, :3001) + Vite (:5173)
 ```
 
-Otevři http://localhost:5173. Druhy jsou seskupené do sekcí podle hlavní kategorie Rohlíku (pořadí Rohlíku nebo abecedně, nebo bez seskupení), uvnitř jdou řadit podle počtu, slevy, ceny či abecedy; lišta nahoře skáče na kategorii. Akce se stahují po hlavních kategoriích (karty naskakují postupně,
+Otevři http://localhost:5173. Druhy jsou seskupené do sekcí (accordion: otevřená je nejvýš jedna, ostatní ukazují náhled 6 druhů s největší slevou) podle hlavní kategorie Rohlíku (pořadí Rohlíku nebo abecedně, nebo bez seskupení), uvnitř jdou řadit podle počtu, slevy, ceny či abecedy; lišta nahoře skáče na kategorii. Akce se stahují po hlavních kategoriích (karty naskakují postupně,
 celé první načtení ~30–60 s) a cachují se na hodinu do `data/` (v gitu ignorováno).
 Tlačítko „Obnovit“ vynutí nové stažení.
 
