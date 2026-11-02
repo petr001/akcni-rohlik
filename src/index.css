@@ -93,9 +93,15 @@ body {
   animation: shimmer 1.4s linear infinite;
 }
 
-/* Karty mimo obrazovku se nevykreslují (padding kolem kompenzuje ořez stínu při contain: paint). */
-.cv { content-visibility: auto; contain-intrinsic-size: auto 340px }
-html { overflow-anchor: none } /* poskakování řešíme ručně v App.settle */
+/* Sbalitelná oblast: čistě CSS, obsah zůstává v DOM. */
+.fold {
+  display: grid; grid-template-rows: 0fr; visibility: hidden;
+  transition: grid-template-rows .42s cubic-bezier(.4,0,.2,1), visibility 0s .42s;
+}
+.fold[data-open="true"] { grid-template-rows: 1fr; visibility: visible; transition-delay: 0s }
+.fold-in { overflow: hidden; min-height: 0; opacity: 0; transition: opacity .2s ease }
+.fold[data-open="true"] > .fold-in { opacity: 1; transition: opacity .3s ease .12s }
+html { overflow-anchor: none }
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .folder-in, .folder-out, .pop-in, .bump, .check, .skeleton { animation: none !important }

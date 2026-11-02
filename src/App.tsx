@@ -3,7 +3,7 @@ import type { Cart, Deals, Group, Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
-import { Accordion, DURATION, reducedMotion } from './Accordion'
+import { Fold } from './Fold'
 import { Preview } from './Preview'
 import { kc } from './format'
 
@@ -70,6 +70,19 @@ export default function App() {
       setLoading(false)
     }
   }, [])
+
+  // Po načtení akcí na pozadí přednačti obrázky reprezentantů, ať se při otevření sekce neobjevují až za chvíli.
+  useEffect(() => {
+    if (!deals || loading) return
+    const urls = deals.groups.map((g) => g.products[0]?.image).filter(Boolean)
+    let i = 0
+    const t = setInterval(() => {
+      for (const u of urls.slice(i, i + 6)) new Image().src = u
+      i += 6
+      if (i >= urls.length) clearInterval(t)
+    }, 250)
+    return () => clearInterval(t)
+  }, [deals, loading])
 
   const loadCart = useCallback(async () => {
     const r = await fetch('/api/cart')
@@ -171,28 +184,31 @@ export default function App() {
       else localStorage.setItem(KEY, JSON.stringify(id))
     } catch {}
   }
-  /** Drží nadpis na místě, dokud se jedna sekce zavírá a druhá otevírá (jinak by stránka poskakovala), a pak plynule doscrolluje. */
-  const settle = (id: number | null, scrollAfter: boolean) => {
-    const h = id !== null ? document.querySelector(`#cat-${id} h2`) : null
-    if (!h) return
-    let prev = h.getBoundingClientRect().top
-    const t0 = performance.now()
-    const step = () => {
-      const top = h.getBoundingClientRect().top
-      if (Math.abs(top - prev) > 0.5) scrollBy({ top: top - prev, behavior: 'instant' })
-      if (performance.now() - t0 < DURATION + 40) requestAnimationFrame(step)
-      else if (scrollAfter) document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+  /** Po skončení přechodu výšky jednou plynule doscrolluje na otevřenou sekci. */
+  const scrollWhenDone = (id: number) => {
+    const body = document.getElementById(`cat-${id}-body`)
+    let done = false
+    const go = () => {
+      if (done) return
+      done = true
+      body?.removeEventListener('transitionend', onEnd)
+      document.getElementById(`cat-${id}`)?.scrollIntoView({
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      })
     }
-    requestAnimationFrame(step)
+    const onEnd = (e: TransitionEvent) => e.target === body && e.propertyName === 'grid-template-rows' && go()
+    body?.addEventListener('transitionend', onEnd)
+    setTimeout(go, 800) // pojistka
   }
   const toggle = (id: number) => {
     const opening = openSection !== id
     changeOpen(opening ? id : null)
-    settle(id, opening)
+    if (opening) scrollWhenDone(id)
   }
   const jump = (id: number) => {
     changeOpen(id)
-    settle(id, true)
+    scrollWhenDone(id)
   }
   const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
 
@@ -292,25 +308,22 @@ export default function App() {
                     </button>
                   </h2>
                 )}
-                <Accordion
-                  open={open}
-                  id={`cat-${sec.id}-body`}
-                  preview={
+                {sec.name && (
+                  <Fold open={!open} id={`cat-${sec.id}-preview`}>
                     <Preview
                       groups={sec.groups}
                       onOpenSection={() => toggle(sec.id)}
                       onOpenGroup={(g, rect) => { setOrigin(rect); setOpen(g.id) }}
                     />
-                  }
-                >
-                  <div className="grid grid-cols-2 gap-3.5 px-1 pb-4 pt-1 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                  </Fold>
+                )}
+                <Fold open={open} id={`cat-${sec.id}-body`}>
+                  <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {sec.groups.map((g) => (
-                      <div key={g.id} className="cv -m-2 p-2">
-                        <GroupCard group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
-                      </div>
+                      <GroupCard key={g.id} group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
                     ))}
                   </div>
-                </Accordion>
+                </Fold>
               </section>
             )
           })}

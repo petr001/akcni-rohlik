@@ -15,7 +15,7 @@ export function Preview({ groups, onOpenGroup, onOpenSection }: Props) {
   const top = [...groups].sort((a, b) => b.products[0].discount - a.products[0].discount).slice(0, PREVIEW_COUNT)
   const more = groups.length - top.length
   return (
-    <div className="grid grid-cols-4 gap-2.5 px-1 pb-4 pt-1 sm:grid-cols-7">
+    <div className="grid grid-cols-4 gap-2.5 px-2 pb-5 pt-2 sm:grid-cols-7">
       {top.map((g) => {
         const rep = g.products[0]
         return (

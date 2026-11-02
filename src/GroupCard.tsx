@@ -13,7 +13,7 @@ export function GroupCard({ group, onOpen }: Props) {
   return (
     <button
       onClick={(e) => onOpen(e.currentTarget.getBoundingClientRect())}
-      className="group relative flex h-full w-full flex-col rounded-3xl bg-surface p-2.5 text-left shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-pop active:translate-y-0 active:scale-[.97]"
+      className="group relative flex w-full flex-col rounded-3xl bg-surface p-2.5 text-left shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-pop active:translate-y-0 active:scale-[.97]"
     >
       {n > 1 && <span aria-hidden className="absolute inset-x-5 -bottom-1.5 -z-10 h-4 rounded-b-3xl bg-line/70" />}
       <div className="relative">
