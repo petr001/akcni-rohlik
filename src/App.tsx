@@ -217,13 +217,13 @@ export default function App() {
   const sel = 'h-9 min-w-[8.5rem] flex-1 rounded-full md:min-w-0 border border-line bg-surface px-3 text-sm font-medium shadow-card'
   const chips =
     view !== 'flat' && sections.length > 1 ? (
-      <nav className="flex flex-wrap gap-1.5" aria-label="Kategorie">
+      <nav className="flex flex-wrap gap-1" aria-label="Kategorie">
         {sections.map((sec) => (
           <a
             key={sec.id}
             href={`#cat-${sec.id}`}
             onClick={(e) => { e.preventDefault(); jump(sec.id) }}
-            className="rounded-full border border-line bg-surface px-3 py-1 text-[13px] font-medium transition hover:border-accent hover:text-accent active:scale-95"
+            className="inline-flex items-center rounded-md border border-line bg-surface px-2 py-0.5 text-xs font-medium transition hover:border-accent hover:text-accent active:scale-95 max-md:min-h-8 max-md:px-2.5"
           >
             {sec.name}
           </a>
