@@ -20,8 +20,10 @@ export interface Product {
 export interface Group {
   id: number
   name: string
-  parent: string
-  products: Product[]
+  parent: string // název podskupiny (nadřazená kategorie Rohlíku), '' = bez mezititulku
+  subId: number // id podskupiny – karty se stejným subId jsou u sebe
+  order: number // pořadí „v regálu“ (pořadí uzlů ve stromu kategorií Rohlíku) v rámci hlavní kategorie
+  products: Product[] // seřazené logicky (název bez gramáže, jednotková cena), ne podle slevy
   topId: number // hlavní kategorie Rohlíku
   topName: string
   topOrder: number // pořadí hlavní kategorie na Rohlíku
@@ -29,9 +31,17 @@ export interface Group {
 
 type PartGroup = Omit<Group, 'topId' | 'topName' | 'topOrder'>
 
+/** Verze formátu cache – stará cache bez pořadí/podskupin se stáhne znovu. */
+const SCHEMA = 2
+/** Druh s víc produkty než tohle se rozdělí o úroveň hlouběji (pokud mají podkategorie akce). */
+const DEEPEN_OVER = 12
+/** Zahloubení je „nice to have“: po tomto čase (ms od začátku stahování kategorie) se už nedělá, ať se vejdeme do limitu funkce. */
+const DEEPEN_BUDGET = 4000
+
 /** Akce jedné hlavní kategorie – stahuje se zvlášť, aby se vešlo do limitu funkce (~10 s). */
 export interface Part {
   topId: number
+  schema?: number
   topName?: string
   fetchedAt: string
   groups: PartGroup[]
@@ -59,25 +69,37 @@ export async function topCategories(): Promise<number[]> {
   return ids
 }
 
+/** Název bez gramáže/balení, ať jsou varianty téhož produktu u sebe. */
+const normName = (n: string) =>
+  n
+    .toLowerCase()
+    .replace(/\b(cca|ca)\b/g, '')
+    .replace(/\d+(?:[.,]\d+)?\s*(?:[x×]\s*\d+(?:[.,]\d+)?\s*)?(?:kg|g|ml|cl|dl|l|ks|m|cm|mm|%)(?![a-zá-ž])/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 /** Stáhne a zacachuje akce jedné hlavní kategorie. */
 export async function buildPart(topId: number): Promise<Part> {
-  // Produkt patří do nejhlubšího uzlu (úroveň 2: kategorie → podkategorie → druh), kde je v akci.
-  const owner = new Map<number, { cat: number; parentCat: number | null }>()
-  const catIds = new Set<number>()
-  const parentOf = new Map<number, number | null>()
+  // Produkt patří do nejhlubšího uzlu, kde je v akci: kategorie (0) → podkategorie (1) → druh (2),
+  // druhy s víc než DEEPEN_OVER produkty se dělí ještě o úroveň níž (3).
+  // Pořadí uzlů z API (= pořadí regálů) držíme v `path` (indexy předků), ne podle pořadí dokončení požadavků.
+  const started = Date.now()
+  const owner = new Map<number, { cat: number; level: number }>()
+  const info = new Map<number, { parent: number | null; level: number; path: number[]; l1: number }>()
 
-  async function walk(id: number, parent: number | null, level: number) {
+  async function walk(id: number, parent: number | null, level: number, path: number[]) {
     const all = await saleProductIds(id)
     if (!all.length) return
-    catIds.add(id)
-    parentOf.set(id, parent)
-    if (level < 2) {
+    const l1 = level <= 1 ? id : info.get(parent!)!.l1
+    info.set(id, { parent, level, path, l1 })
+    if (level < 2 || (level === 2 && all.length > DEEPEN_OVER && Date.now() - started < DEEPEN_BUDGET)) {
       const subs = await subcategoryIds('normal', id)
-      await pool(subs, 4, (s) => walk(s, id, level + 1))
+      await pool(subs.map((sid, i) => [sid, i] as const), 4, ([sid, i]) => walk(sid, id, level + 1, [...path, i]))
     }
-    for (const pid of all) if (!owner.has(pid)) owner.set(pid, { cat: id, parentCat: parent })
+    for (const pid of all) if (!owner.has(pid)) owner.set(pid, { cat: id, level })
   }
-  await walk(topId, null, 0)
+  await walk(topId, null, 0, [])
+  const catIds = new Set(info.keys())
 
   const ids = [...owner.keys()]
   const cards = new Map<number, any>()
@@ -113,18 +135,32 @@ export async function buildPart(topId: number): Promise<Part> {
     }
     let g = groups.get(o.cat)
     if (!g) {
+      const i = info.get(o.cat)!
+      const own = names.get(o.cat) ?? String(o.cat)
       g = {
         id: o.cat,
-        name: names.get(o.cat) ?? String(o.cat),
-        parent: o.parentCat === null ? '' : (names.get(parentOf.get(o.cat)!) ?? ''),
+        name: i.level === 3 ? `${own} · ${names.get(i.parent!) ?? ''}` : own,
+        parent: i.level === 0 ? '' : (names.get(i.l1) ?? ''),
+        subId: i.l1,
+        order: 0,
         products: [],
       }
       groups.set(o.cat, g)
     }
     g.products.push(product)
   }
+  // pořadí „v regálu“: lexikograficky podle cesty ve stromu (předek před potomky)
+  const cmpPath = (a: number[], b: number[]) => {
+    for (let k = 0; k < Math.min(a.length, b.length); k++) if (a[k] !== b[k]) return a[k] - b[k]
+    return a.length - b.length
+  }
   const list = [...groups.values()].filter((g) => g.products.length)
-  const part: Part = { topId, topName: names.get(topId) ?? '', fetchedAt: new Date().toISOString(), groups: list }
+  list.sort((a, b) => cmpPath(info.get(a.id)!.path, info.get(b.id)!.path))
+  list.forEach((g, i) => {
+    g.order = i
+    g.products.sort((a, b) => normName(a.name).localeCompare(normName(b.name), 'cs') || a.unitPrice - b.unitPrice)
+  })
+  const part: Part = { topId, schema: SCHEMA, topName: names.get(topId) ?? '', fetchedAt: new Date().toISOString(), groups: list }
   await cache.set(`part-${topId}`, part)
   return part
 }
@@ -136,8 +172,8 @@ export async function getDeals(force = false): Promise<Deals> {
   const pending: number[] = []
   for (const t of tops) {
     const part = await cache.get<Part>(`part-${t}`)
-    if (part) parts.push(part)
-    if (force || !part || part.topName === undefined || Date.now() - Date.parse(part.fetchedAt) > TTL) pending.push(t)
+    if (part?.schema === SCHEMA) parts.push(part) // cache ve starém formátu (bez pořadí) se nepoužije
+    if (force || part?.schema !== SCHEMA || Date.now() - Date.parse(part.fetchedAt) > TTL) pending.push(t)
   }
   // Produkt může být ve více hlavních kategoriích → první výskyt vyhrává.
   const seen = new Set<number>()
@@ -152,9 +188,7 @@ export async function getDeals(force = false): Promise<Deals> {
       if (cur) cur.products.push(...products)
       else byId.set(g.id, { ...g, products })
     }
-  const groups = [...byId.values()]
-  for (const g of groups) g.products.sort((a, b) => b.discount - a.discount)
-  groups.sort((a, b) => b.products.length - a.products.length)
+  const groups = [...byId.values()].sort((a, b) => a.topOrder - b.topOrder || a.order - b.order)
   const times = parts.map((p) => p.fetchedAt).sort()
   return { fetchedAt: times[0] ?? null, total: seen.size, groups, pending }
 }

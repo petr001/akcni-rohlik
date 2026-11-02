@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Cart, Deals, Group, Product } from './types'
+import { subgroups, topDeal, type Cart, type Deals, type Group, type Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
@@ -8,7 +8,6 @@ import { CartIcon } from './CartIcon'
 import { Preview } from './Preview'
 import { kc } from './format'
 
-type Sort = 'count' | 'discount' | 'cheapest' | 'name'
 type View = 'rohlik' | 'abc' | 'flat'
 const KEY = 'fast-rohlik:open'
 const readOpen = (): number | null => {
@@ -33,7 +32,6 @@ export default function App() {
   const [addedId, setAddedId] = useState<number | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<Sort>('discount')
   const [openSection, setOpenSection] = useState<number | null>(readOpen) // accordion: nejvýš jedna otevřená
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
@@ -75,7 +73,7 @@ export default function App() {
   // Po načtení akcí na pozadí přednačti obrázky reprezentantů, ať se při otevření sekce neobjevují až za chvíli.
   useEffect(() => {
     if (!deals || loading) return
-    const urls = deals.groups.map((g) => g.products[0]?.image).filter(Boolean)
+    const urls = deals.groups.map((g) => (g.products.length ? topDeal(g).image : '')).filter(Boolean)
     let i = 0
     const t = setInterval(() => {
       for (const u of urls.slice(i, i + 6)) new Image().src = u
@@ -172,13 +170,7 @@ export default function App() {
     const q = norm(query.trim())
     let list = deals.groups
     if (q) list = list.filter((g) => norm(g.name + ' ' + g.parent + ' ' + g.topName).includes(q) || g.products.some((p) => norm(p.name).includes(q)))
-    const inner: Record<Sort, (a: Group, b: Group) => number> = {
-      count: (a, b) => b.products.length - a.products.length,
-      discount: (a, b) => b.products[0].discount - a.products[0].discount,
-      cheapest: (a, b) => Math.min(...a.products.map((p) => p.salePrice)) - Math.min(...b.products.map((p) => p.salePrice)),
-      name: (a, b) => cmp(a.name, b.name),
-    }
-    const sorted = [...list].sort(inner[sort])
+    const sorted = list // pořadí „v regálu“ určuje server (topOrder, order)
     if (view === 'flat') return [{ id: 0, name: '', groups: sorted }]
     const by = new Map<number, { id: number; name: string; order: number; groups: Group[] }>()
     for (const g of sorted) {
@@ -187,7 +179,7 @@ export default function App() {
       by.set(g.topId, sec)
     }
     return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
-  }, [deals, query, sort, view])
+  }, [deals, query, view])
   const searching = query.trim() !== ''
   const changeOpen = (id: number | null) => {
     setOpenSection(id)
@@ -270,12 +262,6 @@ export default function App() {
             <option value="abc">Kategorie · abecedně</option>
             <option value="flat">Bez seskupení</option>
           </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={`${sel} md:flex-initial`} aria-label="Řazení druhů">
-            <option value="discount">Největší sleva</option>
-            <option value="count">Nejvíc produktů</option>
-            <option value="cheapest">Nejlevnější</option>
-            <option value="name">Abecedně</option>
-          </select>
           <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0`} aria-label="Obnovit akce">
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
             <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
@@ -333,9 +319,18 @@ export default function App() {
                   </Fold>
                 )}
                 <Fold open={open} id={`cat-${sec.id}-body`}>
-                  <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
-                    {sec.groups.map((g) => (
-                      <GroupCard key={g.id} group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
+                  <div className="px-2 pb-5 pt-2">
+                    {subgroups(sec.groups).map((sub, si, all) => (
+                      <div key={`${sub.subId}-${si}`} className={si ? 'mt-4' : ''}>
+                        {all.length > 1 && sub.title && (
+                          <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">{sub.title}</h3>
+                        )}
+                        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
+                          {sub.groups.map((g) => (
+                            <GroupCard key={g.id} group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </Fold>

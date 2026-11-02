@@ -1,4 +1,4 @@
-import type { Group } from './types'
+import { topDeal, type Group } from './types'
 import { kc, pct } from './format'
 import { Img } from './Img'
 
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function GroupCard({ group, onOpen }: Props) {
-  const rep = group.products[0] // největší sleva
+  const rep = topDeal(group) // produkt s největší slevou
   const n = group.products.length
   return (
     <button

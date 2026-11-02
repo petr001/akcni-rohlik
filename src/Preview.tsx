@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { Group } from './types'
+import { subgroups, topDeal, type Group } from './types'
 import { kc, pct } from './format'
 
 export const PREVIEW_COUNT = 6
@@ -23,15 +23,20 @@ export function Preview({ groups, onOpenGroup, onOpenSection }: Props) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  const sorted = [...groups].sort((a, b) => b.products[0].discount - a.products[0].discount)
   const base = Math.max(PREVIEW_COUNT, cols - 1)
   const limit = groups.length === base + 1 ? groups.length : base
-  const top = sorted.slice(0, limit)
+  // Reprezentanti pokrývají různé podskupiny: z každé podskupiny postupně první, druhá… (kolo za kolem),
+  // výsledek se vrátí v pořadí „z regálu“.
+  const subs = subgroups(groups)
+  const picked = new Set<Group>()
+  for (let round = 0; picked.size < limit && round < groups.length; round++)
+    for (const sub of subs) if (picked.size < limit && sub.groups[round]) picked.add(sub.groups[round])
+  const top = groups.filter((g) => picked.has(g))
   const more = groups.length - top.length
   return (
     <div ref={grid} className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2 px-2 pb-4 pt-2">
       {top.map((g) => {
-        const rep = g.products[0]
+        const rep = topDeal(g)
         return (
           <button
             key={g.id}
