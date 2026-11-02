@@ -235,7 +235,7 @@ export default function App() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 pb-32 pt-3">
       <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
-        <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-2 pb-2.5 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
             <span className="hidden lg:inline">Fast Rohlík</span>
@@ -248,9 +248,9 @@ export default function App() {
             className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-44 md:flex-none md:focus:w-72"
           />
           {me ? (
-            <button onClick={logout} className={`${btn} h-9 shrink-0 md:order-last`} title={me}>Odhlásit</button>
+            <button onClick={logout} className={`${btn} ml-auto h-9 shrink-0 md:order-last`} title={me}>Odhlásit</button>
           ) : (
-            <button onClick={() => setShowLogin(true)} className="h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
+            <button onClick={() => setShowLogin(true)} className="ml-auto h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
           )}
           <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
             <option value="rohlik">Kategorie · pořadí Rohlíku</option>
