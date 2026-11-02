@@ -234,12 +234,10 @@ export default function App() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-32 pt-3">
-      <header className="sticky top-0 z-30 -mx-4 mb-4 bg-bg">
-        <div className="bar-md md:flex md:flex-nowrap md:items-center md:gap-2 md:px-4 md:py-2">
-          {/* mobil: první řádek je podbarvený pruh s okrajem; od md se obě části rozprostřou do jednoho řádku */}
-          <div className="bar flex items-center gap-2 px-4 py-2 md:contents">
+      <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink text-base text-bg">⚡</span>
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
             <span className="hidden lg:inline">Fast Rohlík</span>
           </h1>
           <input
@@ -254,8 +252,6 @@ export default function App() {
           ) : (
             <button onClick={() => setShowLogin(true)} className="h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
           )}
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 md:contents">
           <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
             <option value="rohlik">Kategorie · pořadí Rohlíku</option>
             <option value="abc">Kategorie · abecedně</option>
@@ -271,9 +267,8 @@ export default function App() {
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
             <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
           </button>
-          </div>
         </div>
-        {chips && <div className="hidden px-4 py-1.5 lg:block">{chips}</div>}
+        {chips && <div className="mt-2 hidden lg:block">{chips}</div>}
       </header>
       {chips && <div className="mb-4 lg:hidden">{chips}</div>}
 
