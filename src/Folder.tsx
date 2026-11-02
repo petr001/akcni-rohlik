@@ -43,7 +43,7 @@ export function Folder({ group, origin, quantities, busyId, addedId, onAdd, onCl
         role="dialog"
         aria-label={group.name}
         style={{ '--dx': `${dx}px`, '--dy': `${dy}px` } as React.CSSProperties}
-        className={`${closing ? 'folder-out' : 'folder-in'} flex max-h-[88vh] w-full max-w-5xl flex-col rounded-[2rem] bg-bg shadow-pop ring-1 ring-line`}
+        className={`${closing ? 'folder-out' : 'folder-in'} flex max-h-[88vh] w-full max-w-[1280px] flex-col rounded-[2rem] bg-bg shadow-pop ring-1 ring-line`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 px-6 pb-2 pt-5">
@@ -58,7 +58,7 @@ export function Folder({ group, origin, quantities, busyId, addedId, onAdd, onCl
             ✕
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 overflow-y-auto overscroll-contain p-4 pt-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 overflow-y-auto overscroll-contain p-4 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))]">
           {group.products.map((p) => (
             <ProductCard key={p.id} p={p} inCart={quantities[p.id] ?? 0} busy={busyId === p.id} added={addedId === p.id} onAdd={onAdd} />
           ))}

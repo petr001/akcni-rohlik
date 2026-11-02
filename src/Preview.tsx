@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Group } from './types'
 import { kc, pct } from './format'
 
@@ -11,12 +12,24 @@ interface Props {
 
 /** Kompaktní textový náhled sbalené sekce: druhy s největší slevou + „+N dalších“ (jediná zbývající položka se ukáže rovnou). */
 export function Preview({ groups, onOpenGroup, onOpenSection }: Props) {
+  const grid = useRef<HTMLDivElement>(null)
+  const [cols, setCols] = useState(2)
+  // Počet sloupců se čte z vykreslené mřížky, aby limit dlaždic odpovídal řádku (první řádek = dlaždice + „+N“).
+  useLayoutEffect(() => {
+    const el = grid.current!
+    const read = () => setCols(getComputedStyle(el).gridTemplateColumns.split(' ').length)
+    read()
+    const ro = new ResizeObserver(read)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const sorted = [...groups].sort((a, b) => b.products[0].discount - a.products[0].discount)
-  const limit = groups.length === PREVIEW_COUNT + 1 ? groups.length : PREVIEW_COUNT
+  const base = Math.max(PREVIEW_COUNT, cols - 1)
+  const limit = groups.length === base + 1 ? groups.length : base
   const top = sorted.slice(0, limit)
   const more = groups.length - top.length
   return (
-    <div className="grid grid-cols-2 gap-2 px-2 pb-4 pt-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+    <div ref={grid} className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2 px-2 pb-4 pt-2">
       {top.map((g) => {
         const rep = g.products[0]
         return (

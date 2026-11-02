@@ -233,7 +233,7 @@ export default function App() {
   const btn = 'rounded-full bg-surface-2 px-3.5 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-32 pt-3">
+    <div className="mx-auto max-w-[1440px] px-4 pb-32 pt-3">
       <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
         <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
@@ -320,7 +320,7 @@ export default function App() {
                   </Fold>
                 )}
                 <Fold open={open} id={`cat-${sec.id}-body`}>
-                  <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                  <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
                     {sec.groups.map((g) => (
                       <GroupCard key={g.id} group={g} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
                     ))}
@@ -359,7 +359,7 @@ export default function App() {
 
 function Skeleton() {
   return (
-    <div aria-label="Načítám" className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div aria-label="Načítám" className="grid grid-cols-2 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
       {Array.from({ length: 12 }, (_, i) => (
         <div key={i} className="rounded-3xl bg-surface p-2.5 shadow-card">
           <div className="skeleton aspect-square rounded-2xl" />
