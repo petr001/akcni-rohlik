@@ -6,6 +6,7 @@
   --surface: #ffffff;
   --surface-2: #efebe1;
   --header: #e8e2d2;
+  --header-line: #c9c1ab;
   --ink: #1d231f;
   --muted: #6a726c;
   --line: #e3ded1;
@@ -25,6 +26,7 @@
     --surface: #1a1f1b;
     --surface-2: #232a24;
     --header: #1c231e;
+    --header-line: #3a463e;
     --ink: #eef2ee;
     --muted: #9aa59d;
     --line: #2b332d;
@@ -105,8 +107,10 @@ body {
 .fold-in { overflow: hidden; min-height: 0; opacity: 0; transition: opacity .2s ease }
 .fold[data-open="true"] > .fold-in { opacity: 1; transition: opacity .3s ease .12s }
 html { overflow-anchor: none }
-/* Hlavička: plná barva (bez backdrop-filter kvůli plynulému scrollu), akcentní proužek bez změny výšky a stín. */
-.app-header { background: var(--header); box-shadow: inset 0 3px 0 var(--accent), 0 4px 12px -6px rgb(0 0 0 / .35); }
+/* Řádek s logem: jemně odlišený šedý podklad + 1px okraj dole (bez backdrop-filter kvůli plynulému scrollu).
+   Na mobilu je podbarvený jen první řádek (.bar), od md celý jednořádkový blok (.bar-md). */
+.bar { background: var(--header); border-bottom: 1px solid var(--header-line); }
+@media (min-width: 768px) { .bar-md { background: var(--header); border-bottom: 1px solid var(--header-line); } }
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .folder-in, .folder-out, .pop-in, .bump, .check, .skeleton { animation: none !important }
