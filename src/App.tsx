@@ -6,7 +6,8 @@ import { LoginForm } from './LoginForm'
 import { Fold } from './Fold'
 import { CartIcon } from './CartIcon'
 import { Preview } from './Preview'
-import { categoryIcon, kc } from './format'
+import { ShoppingList } from './ShoppingList'
+import { categoryIcon, kc, norm } from './format'
 
 type View = 'rohlik' | 'abc' | 'flat'
 const KEY = 'fast-rohlik:open'
@@ -20,7 +21,6 @@ const readOpen = (): number | null => {
   }
 }
 const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
-const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
 export default function App() {
   const [deals, setDeals] = useState<Deals | null>(null)
@@ -35,6 +35,7 @@ export default function App() {
   const [openSection, setOpenSection] = useState<number | null>(readOpen) // accordion: nejvýš jedna otevřená
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
+  const [listMode, setListMode] = useState(() => location.hash === '#seznam') // nákupní seznam místo mřížky druhů
 
   const [me, setMe] = useState<string | null>(null) // e-mail přihlášeného
   const [showLogin, setShowLogin] = useState(false)
@@ -124,29 +125,42 @@ export default function App() {
     setPending(p)
     setShowLogin(true)
   }
+  /** Celý nákupní seznam – postupně, ať nezahltíme Rohlík (backend má stejně limit souběhu). */
+  const addAll = async (items: { p: Product; qty: number }[]) => {
+    if (!me) return setShowLogin(true)
+    for (const { p, qty } of items) if (!(await send(p, qty))) break
+  }
+  const toggleList = () => {
+    const next = !listMode
+    setListMode(next)
+    history.replaceState(null, '', next ? '#seznam' : location.pathname + location.search)
+  }
 
-  const send = async (p: Product) => {
+  /** Vrací, jestli se přidání povedlo (kvůli přerušení „Přidat vše“). */
+  const send = async (p: Product, quantity = 1): Promise<boolean> => {
     setBusyId(p.id)
     setCartError(null)
     try {
       const r = await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: p.id, quantity: 1 }),
+        body: JSON.stringify({ productId: p.id, quantity }),
       })
       const j = await r.json()
       if (r.status === 401) {
         setMe(null)
         setPending(p)
         setShowLogin(true)
-        return
+        return false
       }
       if (!r.ok) throw new Error(j.error)
       setCart(j)
       setAddedId(p.id)
       setTimeout(() => setAddedId((x) => (x === p.id ? null : x)), 1300)
+      return true
     } catch (e) {
       setCartError((e as Error).message)
+      return false
     } finally {
       setBusyId(null)
     }
@@ -247,31 +261,38 @@ export default function App() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
             <span className="hidden lg:inline">Fast Rohlík</span>
           </h1>
-          <input
+          <button
+            onClick={toggleList}
+            aria-pressed={listMode}
+            className={`h-9 shrink-0 rounded-full px-3.5 text-sm font-semibold transition active:scale-95 ${listMode ? 'bg-accent text-accent-ink' : 'bg-surface-2'}`}
+          >
+            {listMode ? '← Akce' : '🧾 Seznam'}
+          </button>
+          {!listMode && <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="🔍 Hledat…"
             aria-label="Hledat druh nebo produkt"
             className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-44 md:flex-none md:focus:w-72"
-          />
+          />}
           {me ? (
             <button onClick={logout} className={`${btn} ml-auto h-9 shrink-0 md:order-last`} title={me}>Odhlásit</button>
           ) : (
             <button onClick={() => setShowLogin(true)} className="ml-auto h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
           )}
-          <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
+          {!listMode && <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
             <option value="rohlik">Kategorie · pořadí Rohlíku</option>
             <option value="abc">Kategorie · abecedně</option>
             <option value="flat">Bez seskupení</option>
-          </select>
+          </select>}
           <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0`} aria-label="Obnovit akce">
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
             <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
           </button>
         </div>
-        {chips && <div className="mt-2 hidden lg:block">{chips}</div>}
+        {chips && !listMode && <div className="mt-2 hidden lg:block">{chips}</div>}
       </header>
-      {chips && <div className="mb-4 lg:hidden">{chips}</div>}
+      {chips && !listMode && <div className="mb-4 lg:hidden">{chips}</div>}
 
       {error && <p className="rounded-2xl bg-sale/15 p-3 text-sale">Chyba: {error}</p>}
       {progress && (
@@ -280,7 +301,17 @@ export default function App() {
         </p>
       )}
       {!deals && !error && <Skeleton />}
-      {deals && (
+      {deals && listMode && (
+        <ShoppingList
+          groups={deals.groups}
+          quantities={cart?.quantities ?? {}}
+          busyId={busyId}
+          addedId={addedId}
+          onAdd={add}
+          onAddAll={addAll}
+        />
+      )}
+      {deals && !listMode && (
         <>
           <p className="mb-4 text-sm text-muted">
             <b className="text-ink">{deals.total}</b> produktů v akci ve <b className="text-ink">{groupCount}</b> druzích

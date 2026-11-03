@@ -11,3 +11,6 @@ const ICONS: [string, string][] = [
   ['drogerie', '🧴'], ['domácnost', '🏡'], ['dítě', '🍼'], ['zvíře', '🐾'], ['marks', '🛍️'],
 ]
 export const categoryIcon = (name: string) => ICONS.find(([k]) => name.toLowerCase().includes(k))?.[1] ?? ''
+
+/** Bez diakritiky a malými písmeny – „Šulánky“ = „sulanky“. */
+export const norm = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()

@@ -17,6 +17,22 @@ Otevři http://localhost:5173. Druhy jsou seskupené do sekcí (accordion: otev�
 celé první načtení ~30–60 s) a cachují se na hodinu do `data/` (v gitu ignorováno).
 Tlačítko „Obnovit“ vynutí nové stažení.
 
+## Nákupní seznam
+
+Tlačítko „🧾 Seznam“ (nebo `#seznam` v URL) přepne na textové pole, kam vložíš nákupní seznam. Každá položka
+(řádek, nebo části oddělené čárkou / „ a “; odrážky a „2x“/„3 ks“ se odstraní, počet kusů se pamatuje) se napáruje
+**jen na produkty v akci**, které už appka má – bez dalších požadavků na Rohlík (`src/listMatch.ts`):
+
+- bez diakritiky a s hrubým českým „stemmingem“ (*Sulanky* = *Šulánky*, *Cukety* = *Cuketa*, *Baterie aaa* najde *Varta … AAA baterie*),
+- vyhrává produkt, kde je slovo „hlavou“ názvu (*Rajčata oválná*, *Bramborové šulánky*) nebo sedí na druh z Rohlíku;
+  příchutě (*čokoláda s pomerančem*, *pomerančová limonáda*) jsou jen „možná“,
+- víceznačná slova (vyskytují se ve ≥3 hlavních kategoriích, např. *pomeranč*) se řídí sousedy na stejném řádku:
+  u „pomeranče, mandarinky“ najdou mandarinky ovoce, takže Mirinda Pomeranč se pro pomeranče nabídne jen jako „možná“
+  a položka je „v akci není“ s odkazem na hledání na rohlik.cz.
+
+Kliknutím na „Použít tenhle“ se volba pro danou položku zapamatuje (v `localStorage`, stejně jako text seznamu).
+„Přidat do košíku vše nalezené“ přidá nejlepší shody postupně (s počtem kusů ze seznamu).
+
 ## Proměnné prostředí (`.env`, necommituj)
 
 | Proměnná | Význam |
