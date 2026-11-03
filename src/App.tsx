@@ -5,6 +5,7 @@ import { Folder } from './Folder'
 import { LoginForm } from './LoginForm'
 import { Fold } from './Fold'
 import { CartIcon } from './CartIcon'
+import { ListIcon } from './ListIcon'
 import { Preview } from './Preview'
 import { ShoppingList } from './ShoppingList'
 import { categoryIcon, kc, norm } from './format'
@@ -264,9 +265,16 @@ export default function App() {
           <button
             onClick={toggleList}
             aria-pressed={listMode}
-            className={`h-9 shrink-0 rounded-full px-3.5 text-sm font-semibold transition active:scale-95 ${listMode ? 'bg-accent text-accent-ink' : 'bg-surface-2'}`}
+            className={`h-9 shrink-0 rounded-full px-3.5 text-sm font-semibold transition active:scale-95 ${listMode ? 'bg-accent text-accent-ink' : 'bg-surface-2 max-md:w-9 max-md:px-0'}`}
           >
-            {listMode ? '← Akce' : '🧾 Seznam'}
+            {listMode ? (
+              '← Akce'
+            ) : (
+              <span className="flex items-center justify-center gap-1.5">
+                <ListIcon className="h-5 w-5" />
+                <span className="max-md:sr-only">Nákupní seznam</span>
+              </span>
+            )}
           </button>
           {!listMode && <input
             value={query}

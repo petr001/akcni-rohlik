@@ -19,7 +19,7 @@ Tlačítko „Obnovit“ vynutí nové stažení.
 
 ## Nákupní seznam
 
-Tlačítko „🧾 Seznam“ (nebo `#seznam` v URL) přepne na textové pole, kam vložíš nákupní seznam. Každá položka
+Tlačítko „Nákupní seznam“ (nebo `#seznam` v URL) přepne na textové pole, kam vložíš nákupní seznam. Každá položka
 (řádek, nebo části oddělené čárkou / „ a “; odrážky a „2x“/„3 ks“ se odstraní, počet kusů se pamatuje) se napáruje
 **jen na produkty v akci**, které už appka má – bez dalších požadavků na Rohlík (`src/listMatch.ts`):
 
