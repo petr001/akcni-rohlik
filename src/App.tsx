@@ -10,13 +10,11 @@ import { Preview } from './Preview'
 import { ShoppingList } from './ShoppingList'
 import { categoryIcon, kc, norm } from './format'
 
-type View = 'rohlik' | 'abc' | 'flat'
 // Otevřená sekce se neukládá – po načtení jsou všechny sbalené. Úklid starých klíčů z dřívějších verzí.
 try {
   localStorage.removeItem('fast-rohlik:open')
   localStorage.removeItem('fast-rohlik:collapsed')
 } catch {}
-const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
 
 export default function App() {
   const [deals, setDeals] = useState<Deals | null>(null)
@@ -29,7 +27,6 @@ export default function App() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [openSection, setOpenSection] = useState<number | null>(null) // accordion: nejvýš jedna otevřená, po načtení vše sbalené
-  const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
   const [listMode, setListMode] = useState(() => location.hash === '#seznam') // nákupní seznam místo mřížky druhů
 
@@ -180,16 +177,15 @@ export default function App() {
     const q = norm(query.trim())
     let list = deals.groups
     if (q) list = list.filter((g) => norm(g.name + ' ' + g.parent + ' ' + g.topName).includes(q) || g.products.some((p) => norm(p.name).includes(q)))
-    const sorted = list // pořadí „v regálu“ určuje server (topOrder, order)
-    if (view === 'flat') return [{ id: 0, name: '', groups: sorted }]
+    // sekce = hlavní kategorie v pořadí Rohlíku; pořadí „v regálu“ určuje server (topOrder, order)
     const by = new Map<number, { id: number; name: string; order: number; groups: Group[] }>()
-    for (const g of sorted) {
+    for (const g of list) {
       const sec = by.get(g.topId) ?? { id: g.topId, name: g.topName, order: g.topOrder, groups: [] }
       sec.groups.push(g)
       by.set(g.topId, sec)
     }
-    return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
-  }, [deals, query, view])
+    return [...by.values()].sort((a, b) => a.order - b.order)
+  }, [deals, query])
   const searching = query.trim() !== ''
   /** Skok z chipu v liště kategorií: po skončení přechodu výšky plynule doscrolluje na sekci (jediné místo, kde se scrolluje). */
   const scrollWhenDone = (id: number) => {
@@ -220,9 +216,8 @@ export default function App() {
   const openGroup: Group | undefined = deals?.groups.find((g) => g.id === open)
   const closeFolder = useCallback(() => setOpen(null), [])
 
-  const sel = 'h-9 min-w-[8.5rem] flex-1 rounded-full md:min-w-0 border border-line bg-surface px-3 text-sm font-medium shadow-card'
   const chips =
-    view !== 'flat' && sections.length > 1 ? (
+    sections.length > 1 ? (
       <nav className="chips-scroll relative -mx-3 flex flex-nowrap gap-1 overflow-x-auto px-3 py-0.5" aria-label="Kategorie">
         {sections.map((sec) => (
           <a
@@ -276,11 +271,6 @@ export default function App() {
           ) : (
             <button onClick={() => setShowLogin(true)} className="ml-auto h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
           )}
-          {!listMode && <select value={view} onChange={(e) => setView(e.target.value as View)} className={`${sel} md:flex-initial`} aria-label="Seskupení">
-            <option value="rohlik">Kategorie · pořadí Rohlíku</option>
-            <option value="abc">Kategorie · abecedně</option>
-            <option value="flat">Bez seskupení</option>
-          </select>}
           <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0`} aria-label="Obnovit akce">
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
             <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
@@ -314,7 +304,7 @@ export default function App() {
             {deals.fetchedAt && ` · stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
           {sections.map((sec) => {
-            // Při hledání jsou otevřené všechny sekce s výsledky (stav accordionu se nemění); v „Bez seskupení“ vždy.
+            // Při hledání jsou otevřené všechny sekce s výsledky (stav accordionu se nemění).
             const open = searching || !sec.name || openSection === sec.id
             return (
               <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-28 md:scroll-mt-40">
