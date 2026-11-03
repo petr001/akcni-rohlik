@@ -1,4 +1,4 @@
-# ⚡ Fast Rohlík
+# Akční Rohlík
 
 Osobní appka nad rohlik.cz pro rychlejší nakupování akčních produktů. Místo nekonečného seznamu
 ukáže **jednu kartu na druh potraviny** (Káva, Příkrmy, Sprchové gely, Jogurty…) s nejvíce zlevněným
@@ -13,7 +13,7 @@ npm run dev              # API (Hono, :3001) + Vite (:5173)
 ```
 
 Otevři http://localhost:5173. Druhy jsou seskupené do sekcí (accordion: otevřená je nejvýš jedna, po načtení jsou všechny sbalené, ostatní ukazují náhled 6 druhů z různých podskupin) podle hlavní kategorie Rohlíku, v pořadí Rohlíku. Řazení je „jako v regálu“: karty jdou v pořadí uzlů ze stromu kategorií Rohlíku, seskupené do podskupin s mezititulkem (např. všechny jogurty pohromadě, majonézy vedle tatarek); druhy s víc než 12 produkty se dělí o úroveň hlouběji, pokud to stihnou (časový rozpočet 4 s na kategorii kvůli limitu funkce). Produkty ve složce jdou podle názvu bez gramáže a jednotkové ceny, sleva je jen štítek. Lišta nahoře skáče na kategorii. Akce se stahují po hlavních kategoriích (karty naskakují postupně,
-celé první načtení ~30–60 s) a cachují se na hodinu do `data/` (v gitu ignorováno).
+celé první načtení ~30–60 s) a cachují se na 6 hodin do `data/` (v gitu ignorováno).
 Tlačítko „Obnovit“ vynutí nové stažení.
 
 ## Nákupní seznam
@@ -45,7 +45,7 @@ lokálního košíku (`localStorage`, `src/cart.ts`), který je vidět v horní 
 
 Do skutečného košíku ho přenese **bookmarklet** (`src/bookmarklet.ts`):
 
-1. V okně košíku přetáhni „⚡ Do košíku Rohlíku“ do lišty záložek (jednou).
+1. V okně košíku přetáhni „Do košíku Rohlíku“ do lišty záložek (jednou).
 2. Na rohlik.cz (přihlášený) klikni na tu záložku a povol vyskakovací okno.
 3. Bookmarklet otevře appku s `#export`, ta mu přes `postMessage` pošle košík a okno zavře. Pak bookmarklet na rohlik.cz
    zavolá stejný endpoint jako web (`/services/frontend-service/v2/cart`) a doplní jen chybějící kusy – opakované spuštění nic nezdvojí.

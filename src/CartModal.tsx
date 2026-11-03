@@ -35,8 +35,8 @@ export function CartModal({ lines, total, onQty, onClear, onClose }: Props) {
       <div role="dialog" aria-label="Košík" onClick={(e) => e.stopPropagation()} className="pop-in flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl bg-surface p-5 shadow-pop ring-1 ring-line">
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-lg font-bold">Košík</h2>
-          <button onClick={onClear} className="ml-auto text-sm font-semibold text-muted hover:text-sale">Vysypat</button>
-          <button onClick={onClose} aria-label="Zavřít" className="grid h-8 w-8 place-items-center rounded-full bg-surface-2 text-lg leading-none">×</button>
+          <button onClick={onClear} className="h-8 rounded-full bg-surface-2 px-3.5 text-sm font-semibold transition hover:bg-sale/15 hover:text-sale active:scale-95">Vysypat</button>
+          <button onClick={onClose} aria-label="Zavřít" className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-surface-2 text-lg leading-none">×</button>
         </div>
 
         <ul className="-mx-1 min-h-0 flex-1 divide-y divide-line overflow-y-auto px-1">
@@ -65,9 +65,9 @@ export function CartModal({ lines, total, onQty, onClear, onClose }: Props) {
           <p className="font-semibold">Jak to dostat do Rohlíku</p>
           <ol className="mt-1 list-decimal space-y-1 pl-5 text-muted">
             <li>
-              Jednou přetáhni <a ref={link} onClick={(e) => e.preventDefault()} draggable className="inline-block cursor-grab rounded-full bg-accent px-3 py-0.5 font-bold text-accent-ink">⚡ Do košíku Rohlíku</a> do lišty záložek.
+              Jednou přetáhni <a ref={link} onClick={(e) => e.preventDefault()} draggable className="inline-block cursor-grab rounded-full bg-accent px-3 py-0.5 font-bold text-accent-ink">Do košíku Rohlíku</a> do lišty záložek.
             </li>
-            <li>Otevři <a href="https://www.rohlik.cz/" target="_blank" rel="noreferrer" className="font-semibold text-accent underline">rohlik.cz</a> (přihlášený přes Facebook, jak jsi zvyklý) a klikni na tu záložku.</li>
+            <li>Otevři <a href="https://www.rohlik.cz/" target="_blank" rel="noreferrer" className="font-semibold text-accent underline">rohlik.cz</a> a klikni na tu záložku.</li>
             <li>Povol vyskakovací okno – košík se doplní sám.</li>
           </ol>
         </div>

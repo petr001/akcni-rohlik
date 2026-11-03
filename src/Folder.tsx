@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Group, Product } from './types'
 import { ProductCard } from './ProductCard'
+import { norm } from './format'
 
 interface Props {
   group: Group
+  query: string
   origin: DOMRect | null
   quantities: Record<string, number>
   addedId: number | null
@@ -13,7 +15,7 @@ interface Props {
 }
 
 /** „Složka“ jako na iPhonu: roste z místa karty, pozadí se rozmaže. */
-export function Folder({ group, origin, quantities, addedId, onAdd, onRemove, onClose }: Props) {
+export function Folder({ group, query, origin, quantities, addedId, onAdd, onRemove, onClose }: Props) {
   const [closing, setClosing] = useState(false)
   const close = useCallback(() => {
     setClosing(true)
@@ -30,6 +32,13 @@ export function Folder({ group, origin, quantities, addedId, onAdd, onRemove, on
       document.body.style.overflow = prev
     }
   }, [close])
+
+  // stejné hledání jako v seznamu: shoduje-li se název druhu, zůstanou všechny produkty, jinak jen odpovídající
+  const q = norm(query.trim())
+  const products =
+    q && !norm(group.name + ' ' + group.parent + ' ' + group.topName).includes(q)
+      ? group.products.filter((p) => norm(p.name).includes(q))
+      : group.products
 
   const dx = origin ? origin.left + origin.width / 2 - innerWidth / 2 : 0
   const dy = origin ? origin.top + origin.height / 2 - innerHeight / 2 : 24
@@ -51,7 +60,7 @@ export function Folder({ group, origin, quantities, addedId, onAdd, onRemove, on
             <h2 className="text-2xl font-extrabold tracking-tight">{group.name}</h2>
             <p className="text-sm text-muted">
               {group.parent && `${group.parent} · `}
-              {group.products.length} v akci
+              {products.length === group.products.length ? products.length : `${products.length} z ${group.products.length}`} v akci
             </p>
           </div>
           <button onClick={close} className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-lg transition active:scale-90" aria-label="Zavřít">
@@ -59,7 +68,7 @@ export function Folder({ group, origin, quantities, addedId, onAdd, onRemove, on
           </button>
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto overscroll-contain p-4 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))]">
-          {group.products.map((p) => (
+          {products.map((p) => (
             <ProductCard key={p.id} p={p} inCart={quantities[p.id] ?? 0} added={addedId === p.id} onAdd={onAdd} onRemove={onRemove} />
           ))}
         </div>

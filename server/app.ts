@@ -14,7 +14,7 @@ app.use('*', async (c, next) => {
   if (!pw) return next()
   const auth = c.req.header('authorization') ?? ''
   const given = auth.startsWith('Basic ') ? atob(auth.slice(6)).split(':').slice(1).join(':') : ''
-  if (given !== pw) return c.json({ error: 'Unauthorized' }, 401, { 'WWW-Authenticate': 'Basic realm="Fast Rohlik"' })
+  if (given !== pw) return c.json({ error: 'Unauthorized' }, 401, { 'WWW-Authenticate': 'Basic realm="Akcni Rohlik"' })
   return next()
 })
 

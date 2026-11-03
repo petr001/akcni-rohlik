@@ -20,14 +20,14 @@ const SOURCE = (origin: string) =>
   `var bye=function(ms){setTimeout(function(){box.remove()},ms)};` +
   `document.body.appendChild(box);` +
   `if(location.hostname.slice(-9)!=='rohlik.cz'){say('Spusť to na rohlik.cz');bye(4000);return}` +
-  `say('Načítám košík z Fast Rohlíku…');` +
+  `say('Načítám košík z Akčního Rohlíku…');` +
   `var items=await new Promise(function(ok){` +
   `var h=function(e){if(e.origin!==A||!e.data||e.data.type!==${JSON.stringify(EXPORT_TYPE)})return;removeEventListener('message',h);ok(e.data.items)};` +
   `addEventListener('message',h);` +
   `if(!window.open(A+${JSON.stringify(EXPORT_HASH)},'fast-rohlik-export','width=420,height=240')){removeEventListener('message',h);ok(null);return}` +
   `setTimeout(function(){removeEventListener('message',h);ok(null)},15000)});` +
-  `if(!items){say('Košík z Fast Rohlíku se nenačetl – povol vyskakovací okna.');bye(5000);return}` +
-  `if(!items.length){say('Košík ve Fast Rohlíku je prázdný.');bye(4000);return}` +
+  `if(!items){say('Košík z Akčního Rohlíku se nenačetl – povol vyskakovací okna.');bye(5000);return}` +
+  `if(!items.length){say('Košík v Akčním Rohlíku je prázdný.');bye(4000);return}` +
   `var cart='/services/frontend-service/v2/cart';` +
   `try{` +
   `var cur=await(await fetch(cart,{credentials:'same-origin',headers:{Accept:'application/json'}})).json();` +

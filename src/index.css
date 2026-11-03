@@ -121,3 +121,7 @@ html { overflow-anchor: none }
   mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
 }
 .chips-scroll::-webkit-scrollbar { display: none }
+
+/* Klikatelné prvky ukazují ručičku (Tailwind preflight ji u tlačítek nastavuje na default). */
+button:not(:disabled), [role="button"], summary, a[href], label[for], select { cursor: pointer }
+button:disabled { cursor: not-allowed }

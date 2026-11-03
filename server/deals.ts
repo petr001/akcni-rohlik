@@ -54,7 +54,9 @@ export interface Deals {
   pending: number[] // hlavní kategorie, které je potřeba (znovu) stáhnout přes /api/deals/part/:id
 }
 
-const TTL = 60 * 60 * 1000
+const HOUR = 60 * 60 * 1000
+const TTL = 6 * HOUR // akce se stahují nejvýš jednou za 6 h
+const TOP_TTL = 24 * HOUR // seznam hlavních kategorií
 
 async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
   const q = [...items]
@@ -63,7 +65,7 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
 
 export async function topCategories(): Promise<number[]> {
   const cached = await cache.get<{ ids: number[]; at: number }>('top')
-  if (cached && Date.now() - cached.at < 24 * TTL) return cached.ids
+  if (cached && Date.now() - cached.at < TOP_TTL) return cached.ids
   const ids = await subcategoryIds('sales')
   await cache.set('top', { ids, at: Date.now() })
   return ids

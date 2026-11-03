@@ -3,6 +3,7 @@ import { cardsOf, topDeal, type Deals, type Group, type Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
 import { CartModal } from './CartModal'
+import { About } from './About'
 import { EXPORT_HASH, EXPORT_TYPE, ROHLIK_ORIGIN, exportItems } from './bookmarklet'
 import { useCart } from './cart'
 import { Fold } from './Fold'
@@ -11,6 +12,8 @@ import { ListIcon } from './ListIcon'
 import { Preview } from './Preview'
 import { ShoppingList } from './ShoppingList'
 import { categoryIcon, kc, norm } from './format'
+
+const ABOUT_HASH = '#o-aplikaci'
 
 // Otevřená sekce se neukládá – po načtení jsou všechny sbalené. Úklid starých klíčů z dřívějších verzí.
 try {
@@ -30,6 +33,28 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [listMode, setListMode] = useState(() => location.hash === '#seznam') // nákupní seznam místo mřížky druhů
   const [showCart, setShowCart] = useState(false)
+  const [about, setAbout] = useState(() => location.hash === ABOUT_HASH)
+  // Stránka „O aplikaci“ je záznam v historii, takže tlačítko zpět v prohlížeči funguje.
+  const toggleAbout = (next: boolean) => {
+    window.scrollTo(0, 0)
+    if (next) {
+      history.pushState({ about: true }, '', ABOUT_HASH)
+      setAbout(true)
+    } else if (history.state?.about) {
+      history.back() // zavře ji popstate níže
+    } else {
+      history.replaceState(null, '', location.pathname + location.search)
+      setAbout(false)
+    }
+  }
+  useEffect(() => {
+    const onPop = () => {
+      setAbout(location.hash === ABOUT_HASH)
+      window.scrollTo(0, 0)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
   // Okno otevřené bookmarkletem z rohlik.cz: pošle mu košík a zavře se.
   const exporting = location.hash === EXPORT_HASH && !!window.opener
   const [progress, setProgress] = useState<string | null>(null)
@@ -189,14 +214,15 @@ export default function App() {
   const btn = 'rounded-full bg-surface-2 px-3.5 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
 
   if (exporting) return <p className="p-6 text-center font-semibold">Posílám košík na Rohlík…</p>
+  if (about) return <About onClose={() => toggleAbout(false)} />
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-3">
       <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
         <div className="flex flex-wrap items-center gap-2 py-2.5 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-base text-accent-ink">⚡</span>
-            <span className="hidden lg:inline">Fast Rohlík</span>
+            <img src="/logo.svg" alt="" className="h-9 w-9" />
+            <span className="hidden lg:inline">Akční Rohlík</span>
           </h1>
           <button
             onClick={toggleList}
@@ -212,14 +238,29 @@ export default function App() {
               </span>
             )}
           </button>
-          {!listMode && <input
-            ref={searchRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="🔍 Hledat…"
-            aria-label="Hledat druh nebo produkt"
-            className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-72 md:flex-none"
-          />}
+          {!listMode && (
+            <div className="relative h-9 min-w-[7rem] flex-1 md:min-w-0 md:w-72 md:flex-none">
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="🔍 Hledat…"
+                aria-label="Hledat druh nebo produkt"
+                className={`h-full w-full rounded-full border pl-3.5 text-sm shadow-card transition placeholder:text-muted focus:outline-none ${
+                  searching ? 'border-accent bg-accent-soft pr-9 ring-2 ring-accent/40' : 'border-line bg-surface pr-3.5'
+                }`}
+              />
+              {searching && (
+                <button
+                  onClick={() => { setQuery(''); searchRef.current?.focus() }}
+                  aria-label="Smazat hledání"
+                  className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-accent text-xs font-bold text-accent-ink transition active:scale-90"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
           {cart.count > 0 && (
             <button onClick={() => setShowCart(true)} className="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-3.5 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last" aria-label="Otevřít košík">
               <CartIcon className="h-5 w-5" />
@@ -295,7 +336,7 @@ export default function App() {
                 <Fold open={open} id={`cat-${sec.id}-body`}>
                   <div className="grid grid-cols-2 gap-3.5 px-2 pb-5 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4">
                     {cardsOf(sec.groups).map(({ g, tone, first }) => (
-                      <GroupCard key={g.id} group={g} tone={tone} first={first} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
+                      <GroupCard key={g.id} group={g} tone={tone} first={first} inCart={cart.quantities[topDeal(g).id] ?? 0} added={addedId === topDeal(g).id} onAdd={add} onRemove={remove} onOpen={(rect) => { setOrigin(rect); setOpen(g.id) }} />
                     ))}
                   </div>
                 </Fold>
@@ -305,11 +346,17 @@ export default function App() {
         </>
       )}
 
+      <footer className="mt-10 text-center text-sm text-muted">
+        <button onClick={() => toggleAbout(true)} className="underline-offset-2 hover:text-accent hover:underline">
+          O aplikaci a kredity
+        </button>
+      </footer>
+
       {showCart && (
         <CartModal lines={cart.lines} total={cart.total} onQty={cart.setQty} onClear={() => { cart.clear(); setShowCart(false) }} onClose={() => setShowCart(false)} />
       )}
       {openGroup && (
-        <Folder group={openGroup} origin={origin} quantities={cart.quantities} addedId={addedId} onAdd={add} onRemove={remove} onClose={closeFolder} />
+        <Folder group={openGroup} query={query} origin={origin} quantities={cart.quantities} addedId={addedId} onAdd={add} onRemove={remove} onClose={closeFolder} />
       )}
     </div>
   )
