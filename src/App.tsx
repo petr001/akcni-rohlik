@@ -11,16 +11,11 @@ import { ShoppingList } from './ShoppingList'
 import { categoryIcon, kc, norm } from './format'
 
 type View = 'rohlik' | 'abc' | 'flat'
-const KEY = 'fast-rohlik:open'
-const readOpen = (): number | null => {
-  try {
-    localStorage.removeItem('fast-rohlik:collapsed') // starý klíč ze sbalitelných sekcí
-    const v = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    return typeof v === 'number' ? v : null
-  } catch {
-    return null
-  }
-}
+// Otevřená sekce se neukládá – po načtení jsou všechny sbalené. Úklid starých klíčů z dřívějších verzí.
+try {
+  localStorage.removeItem('fast-rohlik:open')
+  localStorage.removeItem('fast-rohlik:collapsed')
+} catch {}
 const cmp = (a: string, b: string) => a.localeCompare(b, 'cs')
 
 export default function App() {
@@ -33,7 +28,7 @@ export default function App() {
   const [addedId, setAddedId] = useState<number | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
-  const [openSection, setOpenSection] = useState<number | null>(readOpen) // accordion: nejvýš jedna otevřená
+  const [openSection, setOpenSection] = useState<number | null>(null) // accordion: nejvýš jedna otevřená, po načtení vše sbalené
   const [view, setView] = useState<View>('rohlik')
   const [loading, setLoading] = useState(false)
   const [listMode, setListMode] = useState(() => location.hash === '#seznam') // nákupní seznam místo mřížky druhů
@@ -196,13 +191,6 @@ export default function App() {
     return [...by.values()].sort((a, b) => (view === 'abc' ? cmp(a.name, b.name) : a.order - b.order))
   }, [deals, query, view])
   const searching = query.trim() !== ''
-  const changeOpen = (id: number | null) => {
-    setOpenSection(id)
-    try {
-      if (id === null) localStorage.removeItem(KEY)
-      else localStorage.setItem(KEY, JSON.stringify(id))
-    } catch {}
-  }
   /** Skok z chipu v liště kategorií: po skončení přechodu výšky plynule doscrolluje na sekci (jediné místo, kde se scrolluje). */
   const scrollWhenDone = (id: number) => {
     const body = document.getElementById(`cat-${id}-body`)
@@ -221,10 +209,10 @@ export default function App() {
     setTimeout(go, 800) // pojistka
   }
   const toggle = (id: number) => {
-    changeOpen(openSection === id ? null : id) // otevření sekce stránku neposouvá
+    setOpenSection(openSection === id ? null : id) // otevření sekce stránku neposouvá
   }
   const jump = (id: number) => {
-    changeOpen(id)
+    setOpenSection(id)
     scrollWhenDone(id)
   }
   const groupCount = sections.reduce((n, s) => n + s.groups.length, 0)
@@ -326,7 +314,7 @@ export default function App() {
             {deals.fetchedAt && ` · stav z ${new Date(deals.fetchedAt).toLocaleString('cs-CZ')}`}
           </p>
           {sections.map((sec) => {
-            // Při hledání jsou otevřené všechny sekce s výsledky (uložený stav se nemění); v „Bez seskupení“ vždy.
+            // Při hledání jsou otevřené všechny sekce s výsledky (stav accordionu se nemění); v „Bez seskupení“ vždy.
             const open = searching || !sec.name || openSection === sec.id
             return (
               <section key={sec.id} id={`cat-${sec.id}`} className="mb-5 scroll-mt-28 md:scroll-mt-40">

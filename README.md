@@ -13,7 +13,7 @@ cp .env.example .env     # a doplň SESSION_SECRET
 npm run dev              # API (Hono, :3001) + Vite (:5173)
 ```
 
-Otevři http://localhost:5173. Druhy jsou seskupené do sekcí (accordion: otevřená je nejvýš jedna, ostatní ukazují náhled 6 druhů z různých podskupin) podle hlavní kategorie Rohlíku (pořadí Rohlíku nebo abecedně, nebo bez seskupení). Řazení je „jako v regálu“: karty jdou v pořadí uzlů ze stromu kategorií Rohlíku, seskupené do podskupin s mezititulkem (např. všechny jogurty pohromadě, majonézy vedle tatarek); druhy s víc než 12 produkty se dělí o úroveň hlouběji, pokud to stihnou (časový rozpočet 4 s na kategorii kvůli limitu funkce). Produkty ve složce jdou podle názvu bez gramáže a jednotkové ceny, sleva je jen štítek. Lišta nahoře skáče na kategorii. Akce se stahují po hlavních kategoriích (karty naskakují postupně,
+Otevři http://localhost:5173. Druhy jsou seskupené do sekcí (accordion: otevřená je nejvýš jedna, po načtení jsou všechny sbalené, ostatní ukazují náhled 6 druhů z různých podskupin) podle hlavní kategorie Rohlíku (pořadí Rohlíku nebo abecedně, nebo bez seskupení). Řazení je „jako v regálu“: karty jdou v pořadí uzlů ze stromu kategorií Rohlíku, seskupené do podskupin s mezititulkem (např. všechny jogurty pohromadě, majonézy vedle tatarek); druhy s víc než 12 produkty se dělí o úroveň hlouběji, pokud to stihnou (časový rozpočet 4 s na kategorii kvůli limitu funkce). Produkty ve složce jdou podle názvu bez gramáže a jednotkové ceny, sleva je jen štítek. Lišta nahoře skáče na kategorii. Akce se stahují po hlavních kategoriích (karty naskakují postupně,
 celé první načtení ~30–60 s) a cachují se na hodinu do `data/` (v gitu ignorováno).
 Tlačítko „Obnovit“ vynutí nové stažení.
 
