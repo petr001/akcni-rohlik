@@ -1,4 +1,4 @@
-# Akční Rohlík
+# ⚡ Akční Rohlík
 
 Osobní appka nad rohlik.cz pro rychlejší nakupování akčních produktů. Místo nekonečného seznamu
 ukáže **jednu kartu na druh potraviny** (Káva, Příkrmy, Sprchové gely, Jogurty…) s nejvíce zlevněným
