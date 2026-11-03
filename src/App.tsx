@@ -102,6 +102,7 @@ export default function App() {
     setAddedId(p.id)
     setTimeout(() => setAddedId((x) => (x === p.id ? null : x)), 1300)
   }
+  const remove = (p: Product) => cart.setQty(p.id, (cart.quantities[p.id] ?? 0) - 1)
   const addAll = (items: { p: Product; qty: number }[]) => items.forEach(({ p, qty }) => add(p, qty))
   const toggleList = () => {
     const next = !listMode
@@ -247,6 +248,7 @@ export default function App() {
           quantities={cart.quantities}
           addedId={addedId}
           onAdd={add}
+          onRemove={remove}
           onAddAll={addAll}
         />
       )}
@@ -307,7 +309,7 @@ export default function App() {
         <CartModal lines={cart.lines} total={cart.total} onQty={cart.setQty} onClear={() => { cart.clear(); setShowCart(false) }} onClose={() => setShowCart(false)} />
       )}
       {openGroup && (
-        <Folder group={openGroup} origin={origin} quantities={cart.quantities} addedId={addedId} onAdd={add} onClose={closeFolder} />
+        <Folder group={openGroup} origin={origin} quantities={cart.quantities} addedId={addedId} onAdd={add} onRemove={remove} onClose={closeFolder} />
       )}
     </div>
   )

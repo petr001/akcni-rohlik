@@ -8,11 +8,12 @@ interface Props {
   quantities: Record<string, number>
   addedId: number | null
   onAdd: (p: Product) => void
+  onRemove: (p: Product) => void
   onClose: () => void
 }
 
 /** „Složka“ jako na iPhonu: roste z místa karty, pozadí se rozmaže. */
-export function Folder({ group, origin, quantities, addedId, onAdd, onClose }: Props) {
+export function Folder({ group, origin, quantities, addedId, onAdd, onRemove, onClose }: Props) {
   const [closing, setClosing] = useState(false)
   const close = useCallback(() => {
     setClosing(true)
@@ -59,7 +60,7 @@ export function Folder({ group, origin, quantities, addedId, onAdd, onClose }: P
         </div>
         <div className="grid grid-cols-2 gap-3 overflow-y-auto overscroll-contain p-4 pt-2 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))]">
           {group.products.map((p) => (
-            <ProductCard key={p.id} p={p} inCart={quantities[p.id] ?? 0} added={addedId === p.id} onAdd={onAdd} />
+            <ProductCard key={p.id} p={p} inCart={quantities[p.id] ?? 0} added={addedId === p.id} onAdd={onAdd} onRemove={onRemove} />
           ))}
         </div>
       </div>

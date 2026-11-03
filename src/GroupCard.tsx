@@ -5,7 +5,7 @@ import { Img } from './Img'
 interface Props {
   group: Group
   tone?: number // odstín podskupiny (hsl hue)
-  first?: boolean // první karta nové podskupiny
+  first?: boolean // první karta nové podskupiny (jen zvýrazní její štítek)
   onOpen: (rect: DOMRect) => void
 }
 
@@ -15,13 +15,10 @@ export function GroupCard({ group, tone, first, onOpen }: Props) {
   return (
     <button
       onClick={(e) => onOpen(e.currentTarget.getBoundingClientRect())}
-      style={tone === undefined ? undefined : ({ '--tone': tone } as React.CSSProperties)}
-      className="group relative flex w-full flex-col overflow-hidden rounded-3xl bg-surface p-2.5 text-left shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-pop active:translate-y-0 active:scale-[.97]"
+      // jemné podbarvení celé karty odstínem podskupiny (míchá se s barvou povrchu, takže sedí ve světlém i tmavém tématu)
+      style={tone === undefined ? undefined : ({ '--tone': tone, background: 'color-mix(in srgb, var(--surface), hsl(var(--tone) 60% 50%) 13%)' } as React.CSSProperties)}
+      className={`group relative flex w-full flex-col overflow-hidden rounded-3xl p-2.5 text-left shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-pop active:translate-y-0 active:scale-[.97] ${tone === undefined ? 'bg-surface' : ''}`}
     >
-      {tone !== undefined && (
-        // barevný okraj podskupiny uvnitř karty (ořezává ho zaoblení rohů)
-        <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: 'hsl(var(--tone) 62% 50%)', opacity: first ? 1 : 0.45 }} />
-      )}
       <div className="relative">
         <Img src={rep.image} className="aspect-square rounded-2xl [&_img]:transition-transform [&_img]:duration-300 group-hover:[&_img]:scale-105" />
         <span className="absolute left-2 top-2 rounded-full bg-sale px-2.5 py-0.5 text-xs font-extrabold text-sale-ink shadow">
@@ -35,7 +32,7 @@ export function GroupCard({ group, tone, first, onOpen }: Props) {
       </div>
       <div className="flex flex-1 flex-col px-1.5 pb-1 pt-2.5">
         <div className={`flex h-3.5 items-center gap-1 truncate text-[10.5px] font-semibold uppercase tracking-wider ${first ? 'text-ink' : 'text-muted'}`}>
-          {tone !== undefined && group.parent && <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'hsl(var(--tone) 62% 50%)' }} />}
+          {tone !== undefined && group.parent && <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: 'hsl(var(--tone) 55% 50%)' }} />}
           <span className="truncate">{group.parent}</span>
         </div>
         <div className="line-clamp-2 text-[17px] font-bold leading-snug">{group.name}</div>
