@@ -28,14 +28,13 @@ baterie AAA`
 interface Props {
   groups: Group[]
   quantities: Record<string, number>
-  busyId: number | null
   addedId: number | null
   onAdd: (p: Product) => void
   onAddAll: (items: { p: Product; qty: number }[]) => void
 }
 
 /** Nákupní seznam: vložený text → u každé položky nejlepší akční produkt + alternativy (párování v listMatch.ts). */
-export function ShoppingList({ groups, quantities, busyId, addedId, onAdd, onAddAll }: Props) {
+export function ShoppingList({ groups, quantities, addedId, onAdd, onAddAll }: Props) {
   const [text, setText] = useState(() => read(LIST_KEY, ''))
   const [picks, setPicks] = useState<Record<string, number>>(() => read(PICKS_KEY, {}))
   const matches = useMemo(() => matchList(parseList(text), groups, picks), [text, groups, picks])
@@ -70,8 +69,7 @@ export function ShoppingList({ groups, quantities, busyId, addedId, onAdd, onAdd
         {found.length > 0 && (
           <button
             onClick={() => onAddAll(found.map((m) => ({ p: m.best!.p, qty: m.item.qty })))}
-            disabled={busyId !== null}
-            className="mt-3 h-10 w-full rounded-full bg-accent px-4 text-sm font-bold text-accent-ink shadow-md transition active:scale-95 disabled:opacity-60"
+            className="mt-3 h-10 w-full rounded-full bg-accent px-4 text-sm font-bold text-accent-ink shadow-md transition active:scale-95"
           >
             Přidat do košíku vše nalezené ({found.length})
           </button>
@@ -81,7 +79,7 @@ export function ShoppingList({ groups, quantities, busyId, addedId, onAdd, onAdd
       <div className="min-w-0 space-y-4">
         {matches.length === 0 && <p className="py-10 text-center text-muted">Vlož seznam vlevo – položky se napárují na akce hned.</p>}
         {matches.map((m, i) => (
-          <Row key={`${i}-${m.item.key}`} m={m} quantities={quantities} busyId={busyId} addedId={addedId} onAdd={onAdd} onChoose={(p) => choose(m, p)} />
+          <Row key={`${i}-${m.item.key}`} m={m} quantities={quantities} addedId={addedId} onAdd={onAdd} onChoose={(p) => choose(m, p)} />
         ))}
       </div>
     </div>
@@ -91,20 +89,19 @@ export function ShoppingList({ groups, quantities, busyId, addedId, onAdd, onAdd
 interface RowProps {
   m: Match
   quantities: Record<string, number>
-  busyId: number | null
   addedId: number | null
   onAdd: (p: Product) => void
   onChoose: (p: Product | null) => void
 }
 
-function Row({ m, quantities, busyId, addedId, onAdd, onChoose }: RowProps) {
+function Row({ m, quantities, addedId, onAdd, onChoose }: RowProps) {
   const [showMaybe, setShowMaybe] = useState(false)
   const search = `https://www.rohlik.cz/hledat?q=${encodeURIComponent(m.item.text)}`
   const hits: Hit[] = m.best ? [m.best, ...m.alts] : []
   const visible = !m.weak || showMaybe
   const card = (h: Hit, best: boolean) => (
     <div key={h.p.id} className={`flex w-40 shrink-0 flex-col gap-1 sm:w-44 ${best && !m.weak ? 'rounded-[1.1rem] ring-2 ring-accent' : ''}`}>
-      <ProductCard p={h.p} inCart={quantities[h.p.id] ?? 0} busy={busyId === h.p.id} added={addedId === h.p.id} onAdd={onAdd} />
+      <ProductCard p={h.p} inCart={quantities[h.p.id] ?? 0} added={addedId === h.p.id} onAdd={onAdd} />
       {best && m.picked ? (
         <button onClick={() => onChoose(null)} className="pb-1 text-xs font-semibold text-accent hover:underline">
           ✓ zapamatováno · zrušit

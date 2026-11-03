@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { cardsOf, topDeal, type Cart, type Deals, type Group, type Product } from './types'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { cardsOf, topDeal, type Deals, type Group, type Product } from './types'
 import { GroupCard } from './GroupCard'
 import { Folder } from './Folder'
-import { LoginForm } from './LoginForm'
+import { CartModal } from './CartModal'
+import { EXPORT_HASH, EXPORT_TYPE, ROHLIK_ORIGIN, exportItems } from './bookmarklet'
+import { useCart } from './cart'
 import { Fold } from './Fold'
 import { CartIcon } from './CartIcon'
 import { ListIcon } from './ListIcon'
@@ -19,20 +21,17 @@ try {
 export default function App() {
   const [deals, setDeals] = useState<Deals | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [cart, setCart] = useState<Cart | null>(null)
-  const [cartError, setCartError] = useState<string | null>(null)
+  const cart = useCart()
   const [open, setOpen] = useState<number | null>(null)
   const [origin, setOrigin] = useState<DOMRect | null>(null)
   const [addedId, setAddedId] = useState<number | null>(null)
-  const [busyId, setBusyId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [openSection, setOpenSection] = useState<number | null>(null) // accordion: nejvýš jedna otevřená, po načtení vše sbalené
   const [loading, setLoading] = useState(false)
   const [listMode, setListMode] = useState(() => location.hash === '#seznam') // nákupní seznam místo mřížky druhů
-
-  const [me, setMe] = useState<string | null>(null) // e-mail přihlášeného
-  const [showLogin, setShowLogin] = useState(false)
-  const [pending, setPending] = useState<Product | null>(null) // produkt čekající na přihlášení
+  const [showCart, setShowCart] = useState(false)
+  // Okno otevřené bookmarkletem z rohlik.cz: pošle mu košík a zavře se.
+  const exporting = location.hash === EXPORT_HASH && !!window.opener
   const [progress, setProgress] = useState<string | null>(null)
 
   /** Akce se stahují po hlavních kategoriích (každá je samostatný krátký požadavek). */
@@ -88,88 +87,26 @@ export default function App() {
     })
   }, [openSection, deals])
 
-  const loadCart = useCallback(async () => {
-    const r = await fetch('/api/cart')
-    const j = await r.json()
-    if (r.status === 401) {
-      setMe(null)
-      setCart(null)
-      return
-    }
-    if (!r.ok) throw new Error(j.error)
-    setCart(j)
-  }, [])
-
   useEffect(() => {
     load()
-    fetch('/api/me')
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.loggedIn) {
-          setMe(j.email)
-          return loadCart()
-        }
-      })
-      .catch((e) => setCartError(e.message))
-  }, [load, loadCart])
+  }, [load])
 
-  const add = (p: Product) => {
-    if (me) return send(p)
-    setPending(p)
-    setShowLogin(true)
+  useEffect(() => {
+    if (!exporting) return
+    window.opener.postMessage({ type: EXPORT_TYPE, items: exportItems(cart.lines) }, ROHLIK_ORIGIN)
+    setTimeout(() => window.close(), 300)
+  }, [exporting]) // košík se čte jen jednou při otevření okna
+
+  const add = (p: Product, qty = 1) => {
+    cart.add(p, qty)
+    setAddedId(p.id)
+    setTimeout(() => setAddedId((x) => (x === p.id ? null : x)), 1300)
   }
-  /** Celý nákupní seznam – postupně, ať nezahltíme Rohlík (backend má stejně limit souběhu). */
-  const addAll = async (items: { p: Product; qty: number }[]) => {
-    if (!me) return setShowLogin(true)
-    for (const { p, qty } of items) if (!(await send(p, qty))) break
-  }
+  const addAll = (items: { p: Product; qty: number }[]) => items.forEach(({ p, qty }) => add(p, qty))
   const toggleList = () => {
     const next = !listMode
     setListMode(next)
     history.replaceState(null, '', next ? '#seznam' : location.pathname + location.search)
-  }
-
-  /** Vrací, jestli se přidání povedlo (kvůli přerušení „Přidat vše“). */
-  const send = async (p: Product, quantity = 1): Promise<boolean> => {
-    setBusyId(p.id)
-    setCartError(null)
-    try {
-      const r = await fetch('/api/cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: p.id, quantity }),
-      })
-      const j = await r.json()
-      if (r.status === 401) {
-        setMe(null)
-        setPending(p)
-        setShowLogin(true)
-        return false
-      }
-      if (!r.ok) throw new Error(j.error)
-      setCart(j)
-      setAddedId(p.id)
-      setTimeout(() => setAddedId((x) => (x === p.id ? null : x)), 1300)
-      return true
-    } catch (e) {
-      setCartError((e as Error).message)
-      return false
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const loggedIn = (email: string) => {
-    setMe(email)
-    setShowLogin(false)
-    if (pending) send(pending)
-    else loadCart().catch((e) => setCartError(e.message))
-    setPending(null)
-  }
-  const logout = async () => {
-    await fetch('/api/logout', { method: 'POST' })
-    setMe(null)
-    setCart(null)
   }
 
   const sections = useMemo(() => {
@@ -187,6 +124,19 @@ export default function App() {
     return [...by.values()].sort((a, b) => a.order - b.order)
   }, [deals, query])
   const searching = query.trim() !== ''
+  const searchRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
+      const t = e.target as HTMLElement
+      if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return
+      if (!searchRef.current) return
+      e.preventDefault()
+      searchRef.current.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   /** Skok z chipu v liště kategorií: po skončení přechodu výšky plynule doscrolluje na sekci (jediné místo, kde se scrolluje). */
   const scrollWhenDone = (id: number) => {
     const body = document.getElementById(`cat-${id}-body`)
@@ -237,8 +187,10 @@ export default function App() {
     ) : null
   const btn = 'rounded-full bg-surface-2 px-3.5 text-sm font-semibold transition active:scale-95 disabled:opacity-50'
 
+  if (exporting) return <p className="p-6 text-center font-semibold">Posílám košík na Rohlík…</p>
+
   return (
-    <div className="mx-auto max-w-[1440px] px-4 pb-32 pt-3">
+    <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-3">
       <header className="app-header sticky top-0 z-30 -mx-4 mb-4 border-b border-line px-4 py-2">
         <div className="flex flex-wrap items-center gap-2 py-2.5 md:flex-nowrap">
           <h1 className="flex shrink-0 items-center gap-1.5 text-xl font-black tracking-tight">
@@ -260,18 +212,20 @@ export default function App() {
             )}
           </button>
           {!listMode && <input
+            ref={searchRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="🔍 Hledat…"
             aria-label="Hledat druh nebo produkt"
-            className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-44 md:flex-none md:focus:w-72"
+            className="h-9 min-w-[7rem] flex-1 rounded-full border border-line bg-surface px-3.5 text-sm shadow-card transition-[width] placeholder:text-muted md:min-w-0 md:w-72 md:flex-none"
           />}
-          {me ? (
-            <button onClick={logout} className={`${btn} ml-auto h-9 shrink-0 md:order-last`} title={me}>Odhlásit</button>
-          ) : (
-            <button onClick={() => setShowLogin(true)} className="ml-auto h-9 shrink-0 rounded-full bg-accent px-4 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last">Přihlásit</button>
+          {cart.count > 0 && (
+            <button onClick={() => setShowCart(true)} className="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-3.5 text-sm font-bold text-accent-ink transition active:scale-95 md:order-last" aria-label="Otevřít košík">
+              <CartIcon className="h-5 w-5" />
+              <span key={cart.count} className="bump whitespace-nowrap">{cart.count} ks<span className="max-sm:hidden"> · {kc(cart.total)}</span></span>
+            </button>
           )}
-          <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0`} aria-label="Obnovit akce">
+          <button onClick={() => load(true)} disabled={loading} className={`${btn} h-9 shrink-0 max-md:w-9 max-md:px-0 ${cart.count === 0 ? 'ml-auto' : ''}`} aria-label="Obnovit akce">
             <span className={loading ? 'spin inline-block' : 'inline-block'}>↻</span>
             <span className="max-md:sr-only"> {loading ? 'Načítám' : 'Obnovit'}</span>
           </button>
@@ -290,8 +244,7 @@ export default function App() {
       {deals && listMode && (
         <ShoppingList
           groups={deals.groups}
-          quantities={cart?.quantities ?? {}}
-          busyId={busyId}
+          quantities={cart.quantities}
           addedId={addedId}
           onAdd={add}
           onAddAll={addAll}
@@ -350,27 +303,12 @@ export default function App() {
         </>
       )}
 
-      {showLogin && <LoginForm onDone={loggedIn} onClose={() => { setShowLogin(false); setPending(null) }} />}
-      {openGroup && (
-        <Folder group={openGroup} origin={origin} quantities={cart?.quantities ?? {}} busyId={busyId} addedId={addedId} onAdd={add} onClose={closeFolder} />
+      {showCart && (
+        <CartModal lines={cart.lines} total={cart.total} onQty={cart.setQty} onClear={() => { cart.clear(); setShowCart(false) }} onClose={() => setShowCart(false)} />
       )}
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
-        <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full bg-ink py-2 pl-5 pr-2 text-bg shadow-pop">
-          <span key={cart?.count} className={`whitespace-nowrap font-semibold ${cart ? 'bump' : ''}`}>
-            <CartIcon className="mr-1.5 inline h-5 w-5 align-[-4px]" /> {cart ? `${cart.count} ks · ${kc(cart.totalPrice)}` : me ? '…' : 'nepřihlášen'}
-          </span>
-          {cartError && <span className="truncate text-sm text-sale">{cartError}</span>}
-          <a
-            href="https://www.rohlik.cz/"
-            target="_blank"
-            rel="noreferrer"
-            className="whitespace-nowrap rounded-full bg-accent px-4 py-2 text-sm font-bold text-accent-ink transition active:scale-95"
-          >
-            Dokončit na Rohlíku →
-          </a>
-        </div>
-      </div>
+      {openGroup && (
+        <Folder group={openGroup} origin={origin} quantities={cart.quantities} addedId={addedId} onAdd={add} onClose={closeFolder} />
+      )}
     </div>
   )
 }

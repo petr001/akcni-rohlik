@@ -4,16 +4,7 @@ const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 
 export class Session {
-  private cookies: Map<string, string>
-  userId?: number
-
-  constructor(cookies: Record<string, string> = {}) {
-    this.cookies = new Map(Object.entries(cookies))
-  }
-
-  exportCookies(): Record<string, string> {
-    return Object.fromEntries(this.cookies)
-  }
+  private cookies = new Map<string, string>()
 
   private active = 0
   private waiting: (() => void)[] = []
@@ -64,16 +55,6 @@ export class Session {
       throw Object.assign(new Error(msg || `Rohlik ${res.status} ${path}`), { status: res.status, rohlik: true })
     }
     return (text ? JSON.parse(text) : {}) as T
-  }
-
-  async login(email: string, password: string) {
-    // Heslo se jen přepošle Rohlíku – nikam se neukládá ani neloguje.
-    const r = await this.req('/services/frontend-service/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name: '' }),
-    })
-    if (!r?.data?.user?.id) throw Object.assign(new Error('Přihlášení se nezdařilo'), { status: 401 })
-    this.userId = r.data.user.id
   }
 }
 

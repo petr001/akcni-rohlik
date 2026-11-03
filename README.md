@@ -9,7 +9,6 @@ s obrázkem, akční cenou, původní cenou, slevou a tlačítkem do košíku.
 
 ```bash
 npm install
-cp .env.example .env     # a doplň SESSION_SECRET
 npm run dev              # API (Hono, :3001) + Vite (:5173)
 ```
 
@@ -37,24 +36,30 @@ Kliknutím na „Použít tenhle“ se volba pro danou položku zapamatuje (v `l
 
 | Proměnná | Význam |
 | --- | --- |
-| `SESSION_SECRET` | tajný klíč k šifrování session cookie (`openssl rand -base64 32`) |
 | `APP_PASSWORD` | volitelné; když je nastavené, `/api/*` vyžaduje HTTP Basic s tímto heslem |
 
-## Přihlášení
+## Košík a přenos do Rohlíku
 
-Prohlížení akcí je veřejné, přihlášení k účtu na rohlik.cz se vyžaduje až při přidání do košíku
-(formulář v appce, vyplní ho správce hesel). `POST /api/login` přepošle údaje Rohlíku a heslo ihned
-zahodí – nikam se neukládá ani neloguje. Session Rohlíku je uložená jen v šifrovaném cookie
-(`HttpOnly`, `SameSite=Lax`, `Secure` mimo localhost, platnost 12 h), backend je tedy bez stavu.
-Objednávku dokončíš na rohlik.cz / v appce – košík je sdílený s účtem.
+Appka se k účtu na rohlik.cz **nepřihlašuje** (funguje i přihlášení přes Facebook). Tlačítko u produktu ho přidá do
+lokálního košíku (`localStorage`, `src/cart.ts`), který je vidět v horní liště; po kliknutí se otevře okno s úpravou množství.
+
+Do skutečného košíku ho přenese **bookmarklet** (`src/bookmarklet.ts`):
+
+1. V okně košíku přetáhni „⚡ Do košíku Rohlíku“ do lišty záložek (jednou).
+2. Na rohlik.cz (přihlášený) klikni na tu záložku a povol vyskakovací okno.
+3. Bookmarklet otevře appku s `#export`, ta mu přes `postMessage` pošle košík a okno zavře. Pak bookmarklet na rohlik.cz
+   zavolá stejný endpoint jako web (`/services/frontend-service/v2/cart`) a doplní jen chybějící kusy – opakované spuštění nic nezdvojí.
+
+Session Rohlíku zůstává jen v prohlížeči, backend o ní nic neví. Bookmarklet má adresu appky zapečenou z místa, kde ho uložíš
+(`location.origin`), takže ho ulož z nasazené verze, ne z `localhost`.
 
 ## Jak to funguje
 
-- `server/app.ts` – jediná Hono app (`/api/deals`, `/api/deals/part/:id`, `/api/cart`) + místo pro `APP_PASSWORD`. Lokálně ji servíruje `server/dev.ts`, na Vercelu `api/index.ts`.
+- `server/app.ts` – jediná Hono app (`/api/deals`, `/api/deals/part/:id`) + místo pro `APP_PASSWORD`. Lokálně ji servíruje `server/dev.ts`, na Vercelu `api/index.ts`.
 - `server/cache.ts` – adaptér cache (lokálně soubory v `data/`).
 - `server/rohlik.ts` – klient neoficiálního REST API webu rohlik.cz (stejné endpointy jako web:
-  `/api/v1/categories/sales/...`, `/api/v1/products/card`, `/services/frontend-service/v2/cart`).
-  Seznam akcí je veřejný, košík vyžaduje přihlášení.
+  `/api/v1/categories/sales/...`, `/api/v1/products/card`, `/services/frontend-service/v2/cart` – ten volá jen bookmarklet).
+  Seznam akcí je veřejný.
 - `server/deals.ts` – po hlavních kategoriích (každá samostatný krátký požadavek) projde strom kategorií do 3. úrovně (kategorie → podkategorie → druh),
   každý produkt zařadí do nejhlubší kategorie, kde je v akci. „Druh“ je tedy kategorie z Rohlíku
   (např. *Káva*, *Prací gely*), ne vlastní klasifikace – občas je hrubší (např. *Příkrmy*)
@@ -67,7 +72,7 @@ Architektura je na to připravená (`api/index.ts` + `vercel.json` s rewrite `/a
 limit ~10 s na funkci splňuje stahování po jedné hlavní kategorii). Před nasazením je potřeba:
 
 1. Napsat sdílený adaptér cache (Vercel Blob / KV) místo `MemoryCache` v `server/cache.ts` – paměť funkce se mezi instancemi nesdílí.
-2. Nastavit `SESSION_SECRET` a `APP_PASSWORD` (nebo zapnout Vercel Authentication) v nastavení projektu `fast-rohlik`. Repo nech private.
+2. Nastavit `APP_PASSWORD` (nebo zapnout Vercel Authentication) v nastavení projektu `fast-rohlik`. Repo nech private.
 3. Nasazení zatím nebylo zkoušeno.
 
 ## Upozornění
