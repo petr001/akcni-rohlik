@@ -53,11 +53,11 @@ Do skutečného košíku ho přenese **bookmarklet** (`src/bookmarklet.ts`):
    zavolá stejný endpoint jako web (`/services/frontend-service/v2/cart`) a doplní jen chybějící kusy – opakované spuštění nic nezdvojí.
 
 Session Rohlíku zůstává jen v prohlížeči, backend o ní nic neví. Bookmarklet má adresu appky zapečenou z místa, kde ho uložíš
-(`location.origin`), takže ho ulož z nasazené verze, ne z `localhost`.
+(`location.origin`), takže ho ulož z adresy, na které appku používáš.
 
 ## Jak to funguje
 
-- `server/app.ts` – jediná Hono app (`/api/deals`, `/api/deals/part/:id`) + místo pro `APP_PASSWORD`. Lokálně ji servíruje `server/dev.ts`, na Vercelu `api/index.ts`.
+- `server/app.ts` – jediná Hono app (`/api/deals`, `/api/deals/part/:id`) + místo pro `APP_PASSWORD`. Servíruje ji `server/dev.ts`.
 - `server/cache.ts` – adaptér cache (lokálně soubory v `data/`).
 - `server/rohlik.ts` – klient neoficiálního REST API webu rohlik.cz (stejné endpointy jako web:
   `/api/v1/categories/sales/...`, `/api/v1/products/card`, `/services/frontend-service/v2/cart` – ten volá jen bookmarklet).
@@ -67,15 +67,6 @@ Session Rohlíku zůstává jen v prohlížeči, backend o ní nic neví. Bookma
   (např. *Káva*, *Prací gely*), ne vlastní klasifikace – občas je hrubší (např. *Příkrmy*)
   nebo obecnější (*Bílá* pod *Víno*). Zobrazuje se i nadřazená kategorie.
 - `src/` – React + Tailwind frontend, Vite proxuje `/api` na backend.
-
-## Budoucí nasazení na Vercel
-
-Architektura je na to připravená (`api/index.ts` + `vercel.json` s rewrite `/api/(.*)`, funkce bez stavu,
-limit ~10 s na funkci splňuje stahování po jedné hlavní kategorii). Před nasazením je potřeba:
-
-1. Napsat sdílený adaptér cache (Vercel Blob / KV) místo `MemoryCache` v `server/cache.ts` – paměť funkce se mezi instancemi nesdílí.
-2. Nastavit `APP_PASSWORD` (nebo zapnout Vercel Authentication) v nastavení projektu `fast-rohlik`. Repo nech private.
-3. Nasazení zatím nebylo zkoušeno.
 
 ## Upozornění
 
